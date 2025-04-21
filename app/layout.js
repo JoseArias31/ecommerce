@@ -2,14 +2,14 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <head>
-        <title>Modern E-Commerce</title>
+        <title>The Quick Shop</title>
         <meta name="description" content="A minimalist e-commerce store" />
       </head>
       <body>
         <div className="flex flex-col min-h-screen">
           <nav className="border-b">
             <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-              <div className="text-xl font-bold">STORE</div>
+              <div className="text-4xl font-bold">The Quick Shop</div>
 
               <div className="flex items-center space-x-4">
                 <div className="p-2 relative">
@@ -28,6 +28,9 @@ export default function RootLayout({ children }) {
                     <circle cx="19" cy="21" r="1"></circle>
                     <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"></path>
                   </svg>
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-black text-xs w-5 h-5 rounded-full flex items-center justify-center ">
+          2
+              </span>
                 </div>
                 <div className="p-2">
                   <svg

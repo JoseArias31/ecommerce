@@ -12,6 +12,7 @@ export default function Navbar() {
         <div className="flex items-center space-x-4">
           <Link href="/checkout" className="p-2 relative">
             <ShoppingCart className="h-5 w-5" />
+           
           </Link>
           <Link href="/admin" className="p-2">
             <User className="h-5 w-5" />
