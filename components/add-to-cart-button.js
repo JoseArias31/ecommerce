@@ -4,14 +4,14 @@ import { useState, useEffect } from "react"
 import { ShoppingCart } from "lucide-react"
 
 export default function AddToCartButton({ product }) {
-  const [quantity, setQuantity] = useState(1)
-  
-
-  // Cargar cantidad guardada al iniciar
-  useEffect(() => {
-    const savedQuantities = JSON.parse(localStorage.getItem('productQuantities')) || {}
-    setQuantity(savedQuantities[product.id] || 1)
-  }, [product.id])
+  // Inicializa el estado con el valor de localStorage (o 1 si no existe)
+  const [quantity, setQuantity] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const savedQuantities = JSON.parse(localStorage.getItem('productQuantities')) || {}
+      return savedQuantities[product.id] || 1
+    }
+    return 1 // Fallback para SSR
+  })
 
   // Guardar cantidad cuando cambie
   useEffect(() => {
@@ -37,32 +37,33 @@ export default function AddToCartButton({ product }) {
     }
 
     localStorage.setItem('cart', JSON.stringify(existingCart))
- 
   }
 
   return (
     <div>
-      <div className="flex items-center mb-4">
+      <div className="flex items-center mb-4 space-x-2">
         <button
-          className="w-8 h-8 flex items-center justify-center border rounded-md"
+          className="w-8 h-8 flex items-center justify-center border rounded-md "
           onClick={() => setQuantity(Math.max(1, quantity - 1))}
         >
           -
         </button>
         <span className="mx-4">{quantity}</span>
-        
+
         <button
           className="w-8 h-8 flex items-center justify-center border rounded-md"
           onClick={() => setQuantity(quantity + 1)}
         >
           +
         </button>
+        <button
+          className="btn-primary w-full flex items-center justify-center"
+          onClick={handleAddToCart}
+        >
+          <ShoppingCart className="h-4 w-4 mr-2" />
+          Add to Cart
+        </button>
       </div>
-
-      <button className="btn-primary w-full flex items-center justify-center" onClick={handleAddToCart}>
-        <ShoppingCart className="h-4 w-4 mr-2" />
-        Add to Cart
-      </button>
     </div>
-  )
+  );
 }
