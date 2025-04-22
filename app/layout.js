@@ -1,5 +1,28 @@
+"use client"
 import Link from "next/link"
+import { useEffect, useState } from "react";
+
 export default function RootLayout({ children }) {
+  const [cartCount, setCartCount] = useState(0);
+
+  useEffect(() => {
+    // Function to sum all quantities in the cart
+    const getCartCount = () => {
+      if (typeof window === 'undefined') return 0;
+      const cart = JSON.parse(localStorage.getItem('cart')) || [];
+      return cart.reduce((sum, item) => sum + item.quantity, 0);
+    };
+
+    // Initial count
+    setCartCount(getCartCount());
+
+    // Listen for cart updates from anywhere in the app
+    const handleCartUpdate = () => setCartCount(getCartCount());
+    window.addEventListener('cartUpdated', handleCartUpdate);
+
+    return () => window.removeEventListener('cartUpdated', handleCartUpdate);
+  }, []);
+
   return (
     <html lang="en">
       <head>
@@ -8,7 +31,7 @@ export default function RootLayout({ children }) {
       </head>
       <body>
         <div className="flex flex-col min-h-screen">
-          <nav className="border-b">
+          <nav className="border-b sticky top-0 z-50 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/60 transition-shadow">
             <div className="container mx-auto px-4 py-4 flex justify-between items-center">
               <Link href="/">
                 <h1 className="text-4xl font-bold text-black">
@@ -17,6 +40,7 @@ export default function RootLayout({ children }) {
               </Link>
 
               <div className="flex items-center space-x-4">
+                <Link href="/checkout" className="text-black">
                 <div className="p-2 relative">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -34,9 +58,11 @@ export default function RootLayout({ children }) {
                     <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"></path>
                   </svg>
                   <span className="absolute -top-1 -right-1 bg-red-500 text-black text-xs w-5 h-5 rounded-full flex items-center justify-center ">
-                    2
+                    {cartCount}
                   </span>
+                  
                 </div>
+                </Link>
                 <div className="p-2">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -61,7 +87,7 @@ export default function RootLayout({ children }) {
             <div className="container mx-auto px-4 py-6">
               <div className="flex flex-col md:flex-row justify-between items-center">
                 <p className="text-sm text-gray-600">
-                  © {new Date().getFullYear()} Modern E-Commerce. All rights
+                  {new Date().getFullYear()} Modern E-Commerce. All rights
                   reserved.
                 </p>
                 <div className="flex space-x-4 mt-4 md:mt-0">
@@ -93,9 +119,8 @@ export default function RootLayout({ children }) {
   );
 }
 
-
 import './globals.css'
 
-export const metadata = {
-      generator: 'v0.dev'
-    };
+// export const metadata = {
+//   generator: 'v0.dev'
+// };

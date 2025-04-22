@@ -1,24 +1,14 @@
-"use client"
-
-import { useState, useEffect } from "react"
+import { useEffect, useState } from "react"
 import { ShoppingCart } from "lucide-react"
+import Link from "next/link"
+import { useQuantityStore } from "../store/quantityStore"
 
 export default function AddToCartButton({ product }) {
-  // Inicializa el estado con el valor de localStorage (o 1 si no existe)
-  const [quantity, setQuantity] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const savedQuantities = JSON.parse(localStorage.getItem('productQuantities')) || {}
-      return savedQuantities[product.id] || 1
-    }
-    return 1 // Fallback para SSR
-  })
+  const quantity = useQuantityStore((state) => state.quantities[product.id] || 1)
+  const setQuantity = useQuantityStore((state) => state.setQuantity)
+  const [showCheckout, setShowCheckout] = useState(false)
 
-  // Guardar cantidad cuando cambie
-  useEffect(() => {
-    const savedQuantities = JSON.parse(localStorage.getItem('productQuantities')) || {}
-    savedQuantities[product.id] = quantity
-    localStorage.setItem('productQuantities', JSON.stringify(savedQuantities))
-  }, [quantity, product.id])
+  useEffect(() => {}, []) // Ya no es necesario guardar en localStorage aquí
 
   const handleAddToCart = () => {
     const existingCart = JSON.parse(localStorage.getItem('cart')) || []
@@ -37,33 +27,48 @@ export default function AddToCartButton({ product }) {
     }
 
     localStorage.setItem('cart', JSON.stringify(existingCart))
+    window.dispatchEvent(new Event('cartUpdated')) // Actualiza el badge en tiempo real
+    setShowCheckout(true)
+    // Elimina el temporizador para dejar el botón fijo
   }
 
   return (
-    <div>
-      <div className="flex items-center mb-4 space-x-2">
+    <div className="w-full max-w-xs">
+      <div className="flex items-center space-x-2">
         <button
-          className="w-8 h-8 flex items-center justify-center border rounded-md "
-          onClick={() => setQuantity(Math.max(1, quantity - 1))}
+          className="w-8 h-8 flex items-center justify-center border rounded-md bg-gray-100 hover:bg-gray-200 text-lg font-bold transition"
+          onClick={() => setQuantity(product.id, Math.max(1, quantity - 1))}
+          aria-label="Decrease quantity"
         >
           -
         </button>
-        <span className="mx-4">{quantity}</span>
-
+        <input
+          type="number"
+          min={1}
+          value={quantity}
+          onChange={(e) => setQuantity(product.id, Math.max(1, Number(e.target.value)))}
+          className="w-12 text-center border rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400"
+        />
         <button
-          className="w-8 h-8 flex items-center justify-center border rounded-md"
-          onClick={() => setQuantity(quantity + 1)}
+          className="w-8 h-8 flex items-center justify-center border rounded-md bg-gray-100 hover:bg-gray-200 text-lg font-bold transition"
+          onClick={() => setQuantity(product.id, quantity + 1)}
+          aria-label="Increase quantity"
         >
           +
         </button>
         <button
-          className="btn-primary w-full flex items-center justify-center"
+          className="ml-2 px-4 py-2 bg-black hover:bg-gray-800 text-white rounded-md flex items-center gap-2 font-semibold text-base transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 active:scale-95 whitespace-nowrap"
           onClick={handleAddToCart}
         >
-          <ShoppingCart className="h-4 w-4 mr-2" />
+          <ShoppingCart className="h-5 w-5" />
           Add to Cart
         </button>
       </div>
+      {showCheckout && (
+        <Link href="/checkout" className="block mt-3 px-4 py-2 bg-black hover:bg-gray-800 text-white rounded-md text-center font-semibold text-base transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 active:scale-95">
+          Go to Checkout
+        </Link>
+      )}
     </div>
-  );
+  )
 }
