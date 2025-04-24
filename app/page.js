@@ -69,6 +69,19 @@ export default function Home() {
   // Categories (derived from products)
   const categories = ["all", ...new Set(products.map((product) => product.category || "uncategorized"))]
 
+  // Random hero carousel index (random mode)
+  const [randomHeroIndex, setRandomHeroIndex] = useState(
+    () => Math.floor(Math.random() * featuredProducts.length)
+  )
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setRandomHeroIndex(
+        Math.floor(Math.random() * featuredProducts.length)
+      )
+    }, 5000)
+    return () => clearInterval(interval)
+  }, [featuredProducts.length])
+
   if (!isMounted) {
     return null
   }
@@ -77,7 +90,7 @@ export default function Home() {
   return (
     <main className="bg-white">
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-white border-b border-gray-100">
+      <section className="relative overflow-hidden bg-gradient-to-br from-indigo-50 via-white to-purple-50 border-b border-gray-100">
         <div className="container mx-auto px-6 py-10 max-w-7xl">
           {/* Animated Dots Background */}
           <div className="absolute inset-0 overflow-hidden opacity-10">
@@ -134,36 +147,26 @@ export default function Home() {
 
             {/* Right Side - Interactive Product Showcase */}
             <div className="md:w-1/2 relative">
-              <div className="grid grid-cols-2 gap-4">
-                {featuredProducts.slice(0, 2).map((product, index) => (
-                  <div
-                    key={product.id}
-                    className={`group relative overflow-hidden rounded-2xl ${index === 0 ? "col-span-2" : ""}`}
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10"></div>
-                    <Image
-                      src={product.image || "/placeholder.svg"}
-                      alt={product.name}
-                      width={400}
-                      height={400}
-                      className={`w-full ${index === 0 ? "h-64" : "h-40"} object-cover object-center transition-transform duration-500 group-hover:scale-105`}
-                    />
-                    <div className="absolute bottom-0 left-0 right-0 p-4 z-20 transform translate-y-full group-hover:translate-y-0 transition-transform duration-300">
-                      <h3 className="text-white font-medium text-lg mb-1">{product.name}</h3>
-                      <div className="flex items-center justify-between">
-                        <span className="text-white/90 font-bold">${product.price}</span>
-                        <Link href={`/products/${product.id}`} className="text-white/90 text-sm hover:text-white">
-                          View Details
-                        </Link>
-                      </div>
-                    </div>
+              <div className="flex items-center justify-center">
+                <div className="w-full h-64 md:h-96 relative overflow-hidden rounded-2xl shadow-lg">
+                  <Image
+                    key={featuredProducts[randomHeroIndex].id}
+                    src={featuredProducts[randomHeroIndex].image || "/placeholder.svg"}
+                    alt={featuredProducts[randomHeroIndex].name}
+                    fill
+                    className="object-cover object-center transition-transform duration-700"
+                  />
+                  <div className="absolute top-4 left-4 bg-white text-indigo-600 rounded px-2 py-1 text-xs font-semibold shadow">
+                    20% OFF
                   </div>
-                ))}
-              </div>
-
-              {/* Floating Badge */}
-              <div className="absolute -top-4 -right-4 bg-white shadow-lg rounded-full px-4 py-2 text-sm font-bold text-[#2a4365] rotate-12 z-20">
-                20% OFF
+                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-4 text-white">
+                    <h3 className="text-xl font-bold">{featuredProducts[randomHeroIndex].name}</h3>
+                    <p className="text-sm">${featuredProducts[randomHeroIndex].price}</p>
+                    <Link href={`/products/${featuredProducts[randomHeroIndex].id}`} className="underline text-sm">
+                      View Details
+                    </Link>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -355,6 +358,7 @@ export default function Home() {
                     </button>
                   </div>
                   <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                 
                 </div>
 
                 <div className="flex-1 flex flex-col p-6">
@@ -509,98 +513,3 @@ export default function Home() {
     </main>
   )
 }
-
-
-
-      {/* All Products */}
-      {/* <section className="container mx-auto px-4 py-12">
-        <h2 className="text-2xl font-bold mb-8">Our Products</h2>
-
-        {filteredProducts.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-lg text-gray-600">
-              No products found. Try a different search or category.
-            </p>
-            <button
-              onClick={() => {
-                setActiveCategory("all");
-                setSearchQuery("");
-              }}
-              className="mt-4 px-4 py-2 bg-black text-white rounded-md hover:bg-gray-800 transition-colors"
-            >
-              Reset Filters
-            </button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
-            {filteredProducts.map((product) => (
-              <div key={product.id} className="group">
-                <div className="aspect-square relative overflow-hidden rounded-lg bg-gray-100 mb-4">
-                  <Link href={`/products/${product.id}`}>
-                    <Image
-                      src={
-                        product.image || "/placeholder.svg?height=500&width=500"
-                      }
-                      alt={product.name}
-                      fill
-                      className="object-cover object-center group-hover:scale-105 transition-transform duration-300"
-                    />
-                  </Link>
-                </div>
-                <Link
-                  href={`/products/${product.id}`}
-                  className="hover:text-gray-700"
-                >
-                  <h3 className="text-lg font-medium">{product.name}</h3>
-                </Link>
-                <p className="text-gray-700 mt-1 font-bold">
-                  ${product.price.toFixed(2)}
-                </p>
-                {/* Quantity Selector */}
-                {/* <div className="flex items-center border rounded-md w-24 mt-2 mb-2">
-                  <button
-                    onClick={() =>
-                      setQuantity(
-                        product.id,
-                        Math.max(1, getQuantity(product.id) - 1)
-                      )
-                    }
-                    className="px-2 py-1 text-gray-600 hover:text-black"
-                    aria-label="Decrease quantity"
-                  >
-                    -
-                  </button>
-                  <input
-                    type="number"
-                    min={1}
-                    value={Number.isFinite(getQuantity(product.id)) ? getQuantity(product.id) : 1}
-                    onChange={(e) =>
-                      setQuantity(
-                        product.id,
-                        Math.max(1, Number(e.target.value))
-                      )
-                    }
-                    className="w-10 text-center border-none focus:ring-0 outline-none"
-                  />
-                  <button
-                    onClick={() =>
-                      setQuantity(product.id, getQuantity(product.id) + 1)
-                    }
-                    className="px-2 py-1 text-gray-600 hover:text-black"
-                    aria-label="Increase quantity"
-                  >
-                    +
-                  </button>
-                </div>
-                <div className="mt-2">
-                  <AddToCartButton
-                    product={product}
-                    quantity={Number.isFinite(getQuantity(product.id)) ? getQuantity(product.id) : 1}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </section> */} 
-   
