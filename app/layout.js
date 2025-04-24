@@ -3,6 +3,7 @@ import '../styles/globals.css';
 import Link from "next/link"
 import { useEffect, useState } from "react";
 import Footer from "@/components/footer";
+import { Globe } from "lucide-react"
 
 export default function RootLayout({ children }) {
   const [cartCount, setCartCount] = useState(0);
@@ -66,7 +67,7 @@ export default function RootLayout({ children }) {
                 </div>
                 </Link>
                 <Link href="/login" className="text-black">
-                <div className="p-2">
+                <div className="relative p-2">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     width="20"
@@ -81,6 +82,10 @@ export default function RootLayout({ children }) {
                     <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
                     <circle cx="12" cy="7" r="4"></circle>
                   </svg>
+                  <div className="absolute -top-2 right-0 flex items-center space-x-1 animate-bounce">
+                   
+                    <span className="bg-blue-500 text-white text-xs rounded-full px-1 drop-shadow">Hey!</span>
+                  </div>
                 </div>
                 </Link>
               </div>
