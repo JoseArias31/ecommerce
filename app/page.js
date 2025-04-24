@@ -78,7 +78,7 @@ export default function Home() {
       setRandomHeroIndex(
         Math.floor(Math.random() * featuredProducts.length)
       )
-    }, 5000)
+    }, 4000)
     return () => clearInterval(interval)
   }, [featuredProducts.length])
 
@@ -146,7 +146,7 @@ export default function Home() {
             </div>
 
             {/* Right Side - Interactive Product Showcase */}
-            <div className="md:w-1/2 relative">
+            <div className="w-full md:w-1/2 relative">
               <div className="flex items-center justify-center">
                 <div className="w-full h-64 md:h-96 relative overflow-hidden rounded-2xl shadow-lg">
                   <Image
