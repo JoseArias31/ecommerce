@@ -10,11 +10,72 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { ArrowLeft } from "lucide-react"
+import {supabase} from "@/lib/supabaseClient"
+import { useRouter } from "next/navigation";
 
 type AuthFormType = "login" | "signup" | "forgot-password"
 
 export function AuthForm({ className, ...props }: React.ComponentProps<"div">) {
   const [formType, setFormType] = useState<AuthFormType>("login")
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+
+  const handleLogin = async () => {
+    setLoading(true);
+    setError(null);
+  
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+  
+      if (error) {
+        setError(error.message);
+        return;
+      }
+  
+      if (data.session) {
+        const userId = data.session.user.id;
+  
+        // Query the membership info
+        const { data: statusData, error: statusError } = await supabase
+          .from("users")
+          .select("status") // or whatever your column is called (maybe 'type')
+          .eq("id", userId)
+          .single();
+  
+        if (statusError || !statusData) {
+          console.error('Error fetching role:', statusError);
+          setError('Could not determine user role.');
+          return;
+        }
+  
+        const role = statusData.status;
+  
+        if (role === 'admin') {
+          router.push('/admin');
+        } else {
+          router.push('/');
+        }
+      } else {
+        setError('Login failed. No session found.');
+      }
+    } catch (err) {
+      console.error('Login error:', err);
+      setError('An unexpected error occurred. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
+
+
+
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
@@ -23,6 +84,13 @@ export function AuthForm({ className, ...props }: React.ComponentProps<"div">) {
           <div className="p-6 md:p-8">
             {formType === "login" && (
               <LoginForm
+                email={email}
+                setEmail={setEmail}
+                password={password}
+                setPassword={setPassword}
+                handleLogin={handleLogin}
+                loading={loading}
+                error={error}
                 onSignUpClick={() => setFormType("signup")}
                 onForgotPasswordClick={() => setFormType("forgot-password")}
               />
@@ -46,37 +114,60 @@ export function AuthForm({ className, ...props }: React.ComponentProps<"div">) {
 }
 
 function LoginForm({
+  email,
+  setEmail,
+  password,
+  setPassword,
+  handleLogin,
+  loading,
+  error,
   onSignUpClick,
   onForgotPasswordClick,
 }: {
+  email: string
+  setEmail: React.Dispatch<React.SetStateAction<string>>
+  password: string
+  setPassword: React.Dispatch<React.SetStateAction<string>>
+  handleLogin: () => Promise<void>
+  loading: boolean
+  error: string | null
   onSignUpClick: () => void
   onForgotPasswordClick: () => void
 }) {
   return (
-    <form className="flex flex-col gap-6">
+    <form onSubmit={(e) => { e.preventDefault(); handleLogin(); }} className="flex flex-col gap-6">
       <div className="flex flex-col items-center text-center">
         <h1 className="text-2xl font-bold">Welcome back</h1>
         <p className="text-balance text-muted-foreground">Login to your Acme Inc account</p>
       </div>
       <div className="grid gap-2">
         <Label htmlFor="email">Email</Label>
-        <Input id="email" type="email" placeholder="m@example.com" required />
+        <Input id="email" type="email" placeholder="m@example.com" required  value={email}
+          onChange={(e) => setEmail(e.target.value)}/>
       </div>
       <div className="grid gap-2">
-        <div className="flex items-center">
-          <Label htmlFor="password">Password</Label>
+        <Label htmlFor="password">Password</Label>
+        <Input
+          id="password"
+          type="password"
+          placeholder="Type your Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+        />
+        <div className="flex justify-end">
           <button
             type="button"
             onClick={onForgotPasswordClick}
-            className="ml-auto text-sm underline-offset-2 hover:underline"
+            className="text-sm underline-offset-2 hover:underline"
           >
             Forgot your password?
           </button>
         </div>
-        <Input id="password" type="password" required />
       </div>
-      <Button type="submit" className="w-full">
-        Login
+      {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+      <Button type="submit" className="w-full" disabled={loading}>
+        {loading ? 'Logging in...' : 'Login'}
       </Button>
       <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-border">
         <span className="relative z-10 bg-background px-2 text-muted-foreground">Or continue with</span>
