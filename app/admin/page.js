@@ -1,60 +1,121 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Image from "next/image"
 import { Edit, Trash2, Plus } from "lucide-react"
-import { products as initialProducts } from "@/lib/products"
+import { supabase } from "@/lib/supabaseClient"
 
 export default function AdminPage() {
-  const [products, setProducts] = useState(initialProducts)
+  const [products, setProducts] = useState([])
+  const [categories, setCategories] = useState([])
   const [isEditing, setIsEditing] = useState(false)
   const [currentProduct, setCurrentProduct] = useState(null)
 
+  // Load products from Supabase on mount
+  const fetchProducts = async () => {
+    const { data, error } = await supabase.from("products").select("*")
+    if (error) console.error("Error fetching products:", error)
+    else setProducts(data)
+  }
+
+  const fetchCategories = async () => {
+    const { data, error } = await supabase.from("categories").select("id,name")
+    if (error) console.error("Error fetching categories:", error)
+    else setCategories(data)
+  }
+
+  useEffect(() => {
+    fetchProducts()
+    fetchCategories()
+  }, [])
+
   const handleEdit = (product) => {
-    setCurrentProduct(product)
+    setCurrentProduct({
+      ...product,
+      // Ensure category_id is a string for the select
+      category_id: product.category_id != null ? product.category_id.toString() : "",
+    })
     setIsEditing(true)
   }
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (confirm("Are you sure you want to delete this product?")) {
-      setProducts(products.filter((product) => product.id !== id))
+      const { error } = await supabase.from("products").delete().eq("id", id)
+      if (error) console.error("Error deleting product:", error)
+      else setProducts((prev) => prev.filter((p) => p.id !== id))
     }
   }
 
   const handleAddNew = () => {
     const newProduct = {
-      id: Math.max(...products.map((p) => p.id)) + 1,
       name: "",
       description: "",
       price: 0,
       image: "/placeholder.svg?height=100&width=100",
-      category: "",
+      category_id: categories.length > 0 ? categories[0].id.toString() : "", // Initialize with first category
     }
     setCurrentProduct(newProduct)
     setIsEditing(true)
   }
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault()
-
-    if (products.some((p) => p.id === currentProduct.id)) {
-      // Update existing product
-      setProducts(products.map((p) => (p.id === currentProduct.id ? currentProduct : p)))
-    } else {
-      // Add new product
-      setProducts([...products, currentProduct])
+    
+    // Handle category_id conversion (allow null if empty string)
+    const categoryId = currentProduct.category_id === "" ? null : Number(currentProduct.category_id)
+    
+    const payload = {
+      name: currentProduct.name,
+      description: currentProduct.description,
+      price: currentProduct.price,
+      image: currentProduct.image,
+      category_id: categoryId,
     }
-
-    setIsEditing(false)
-    setCurrentProduct(null)
+  
+    let data, error
+    if (currentProduct.id) {
+      ({ data, error } = await supabase
+        .from('products')
+        .update(payload)
+        .eq('id', currentProduct.id)
+        .select())
+    } else {
+      ({ data, error } = await supabase
+        .from('products')
+        .insert([payload])
+        .select())
+    }
+  
+    if (error) {
+      console.error('Error saving product:', error)
+    } else {
+      if (currentProduct.id) {
+        setProducts(prev => prev.map(p => p.id === data[0].id ? data[0] : p))
+      } else {
+        setProducts(prev => [...prev, data[0]])
+      }
+      setIsEditing(false)
+      setCurrentProduct(null)
+    }
   }
 
   const handleChange = (e) => {
-    const { name, value } = e.target
-    setCurrentProduct({
-      ...currentProduct,
-      [name]: name === "price" ? Number.parseFloat(value) : value,
-    })
+    const { name, value } = e.target;
+    
+    // Special handling only for price (since we want to keep it as a number in state)
+    if (name === "price") {
+      const processedValue = value === "" ? "" : parseFloat(value);
+      setCurrentProduct(prev => ({
+        ...prev,
+        [name]: processedValue
+      }));
+    } else {
+      // For all other fields (including category_id), keep as string until save
+      setCurrentProduct(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
   }
 
   return (
@@ -90,7 +151,7 @@ export default function AdminPage() {
                 <input
                   type="number"
                   name="price"
-                  value={currentProduct.price}
+                  value={Number.isNaN(currentProduct.price) ? "" : currentProduct.price}
                   onChange={handleChange}
                   className="w-full p-2 border rounded-md"
                   step="0.01"
@@ -100,15 +161,22 @@ export default function AdminPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">Category</label>
-                <input
-                  type="text"
-                  name="category"
-                  value={currentProduct.category}
-                  onChange={handleChange}
-                  className="w-full p-2 border rounded-md"
-                  required
-                />
+                <label className="block text-sm font-medium mb-1" htmlFor="category_id">Category</label>
+                <select
+  id="category_id"
+  name="category_id"
+  value={currentProduct.category_id || ""}
+  onChange={handleChange}
+  className="w-full p-2 border rounded-md"
+  required
+>
+  <option value="">Select a category</option>
+  {categories.map((cat) => (
+    <option key={cat.id} value={cat.id.toString()}>
+      {cat.name}
+    </option>
+  ))}
+</select>
               </div>
 
               <div>
@@ -166,6 +234,9 @@ export default function AdminPage() {
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Category
               </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Created At
+              </th>
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Actions
               </th>
@@ -194,8 +265,13 @@ export default function AdminPage() {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
-                    {product.category}
+                    {categories.find((c) => c.id === product.category_id)?.name || "Unknown"}
                   </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm text-gray-900">
+                    {new Date(product.created_at).toLocaleString()}
+                  </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <button className="text-gray-600 hover:text-gray-900 mr-3" onClick={() => handleEdit(product)}>

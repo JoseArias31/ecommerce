@@ -21,6 +21,10 @@ export function AuthForm({ className, ...props }: React.ComponentProps<"div">) {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+
   const router = useRouter();
 
   const handleLogin = async () => {
@@ -72,6 +76,28 @@ export function AuthForm({ className, ...props }: React.ComponentProps<"div">) {
     }
   };
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setIsSubmitting(true);
+
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+    });
+
+    const user = data?.user;
+
+    if (error) {
+      setError(error.message);
+      setIsSubmitting(false);
+    } else {
+      setSuccess(true);
+      router.push('/dashboard');
+      
+    }
+ 
+  };
 
 
 
