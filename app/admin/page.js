@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import Image from "next/image"
 import { Edit, Trash2, Plus } from "lucide-react"
 import { supabase } from "@/lib/supabaseClient"
@@ -13,53 +13,47 @@ export default function AdminPage() {
   const [categories, setCategories] = useState([])
   const [isEditing, setIsEditing] = useState(false)
   const [currentProduct, setCurrentProduct] = useState(null)
-  const [imageUrls, setImageUrls] = useState([]);
+  const [productImages, setProductImages] = useState([]); // Store images with alt text per product
 
   const imageInputRef = useRef(null);
 
   const handleImageChange = (e) => {
     if (e.target.files) {
       const filesArray = Array.from(e.target.files);
-      const newImageUrls = filesArray.map((file) => URL.createObjectURL(file));
-
-      setImageUrls([...imageUrls, ...newImageUrls]);
+      setCurrentProduct(prev => ({
+        ...prev,
+        images: [
+          ...(prev.images || []),
+          ...filesArray.map(file => ({ file, url: URL.createObjectURL(file), alt: "" }))
+        ]
+      }));
     }
   };
 
   const [isPending, startTransition] = useTransition();
 
-  const handleClickUploadImagesButton = async () => {
-    startTransition(async () => {
-      let urls = [];
-      for (const url of imageUrls) {
-        const imageFile = await convertBlobUrlToFile(url);
+  // Fetch images for all products
+  const fetchProductImages = useCallback(async (products) => {
+    const productIds = products.map((p) => p.id);
+    if (productIds.length === 0) return;
+    const { data, error } = await supabase
+      .from("productimages")
+      .select("id, product_id, url, alt").in("product_id", productIds);
+    if (!error && data) {
+      setProductImages(data);
+    } else {
+      setProductImages([]);
+    }
+  }, []);
 
-        const { imageUrl, error } = await uploadImage({
-          file: imageFile,
-          bucket: "images",
-        });
-
-        if (error) {
-          console.error(error);
-          return;
-        }
-
-        urls.push(imageUrl);
-      }
-
-      console.log(urls);
-      if (urls.length > 0) {
-        setCurrentProduct(prev => ({ ...prev, image: urls[0] }));
-      }
-      setImageUrls([]);
-    });
-  };
-
-  // Load products from Supabase on mount
+  // Load products and their images from Supabase on mount
   const fetchProducts = async () => {
-    const { data, error } = await supabase.from("products").select("*")
-    if (error) console.error("Error fetching products:", error)
-    else setProducts(data)
+    const { data, error } = await supabase.from("products").select("*");
+    if (error) console.error("Error fetching products:", error);
+    else {
+      setProducts(data);
+      await fetchProductImages(data);
+    }
   }
 
   const fetchCategories = async () => {
@@ -75,13 +69,23 @@ export default function AdminPage() {
     fetchCategories()
   }, [])
 
-  const handleEdit = (product) => {
+  // When editing, fetch images for this product
+  const handleEdit = async (product) => {
     setCurrentProduct({
       ...product,
-      // Ensure category_id is a string for the select
       category_id: product.category_id != null ? product.category_id.toString() : "",
-    })
-    setIsEditing(true)
+    });
+    // Fetch images for this product
+    const { data, error } = await supabase
+      .from("productimages")
+      .select("id, url, alt")
+      .eq("product_id", product.id);
+    if (!error && data) {
+      setCurrentProduct((prev) => ({ ...prev, images: data }));
+    } else {
+      setCurrentProduct((prev) => ({ ...prev, images: [] }));
+    }
+    setIsEditing(true);
   }
 
   const handleDelete = async (id) => {
@@ -92,53 +96,84 @@ export default function AdminPage() {
     }
   }
 
+  // Remove the image field from newProduct
   const handleAddNew = () => {
     const newProduct = {
       name: "",
       description: "",
       price: 0,
-      image: "/placeholder.svg?height=100&width=100",
-      category_id: categories.length > 0 ? categories[0].id.toString() : "", // Initialize with first category
-    }
-    setCurrentProduct(newProduct)
-    setIsEditing(true)
+      category_id: categories.length > 0 ? categories[0].id.toString() : "",
+      images: [], // For new images
+    };
+    setCurrentProduct(newProduct);
+    setIsEditing(true);
   }
 
   const handleSave = async (e) => {
     e.preventDefault();
-  
-    // Validate category selection
     if (!currentProduct.category_id) {
       alert("Please select a category for the product.");
       return;
     }
-  
     const payload = {
       name: currentProduct.name,
       description: currentProduct.description,
       price: currentProduct.price,
-      image: currentProduct.image,
-      category_id: currentProduct.category_id, // No conversion needed (Supabase handles it)
+      category_id: currentProduct.category_id,
     };
-  
-    console.log("Payload being saved:", payload);
-  
     try {
-      const { data, error } = currentProduct.id
-        ? await supabase
-            .from("products")
-            .update(payload)
-            .eq("id", currentProduct.id)
-            .select()
-        : await supabase
-            .from("products")
-            .insert([payload])
-            .select();
-  
-      if (error) throw error;
-  
-      // Refresh data
-      fetchProducts();
+      let productId = currentProduct.id;
+      let result;
+      if (currentProduct.id) {
+        result = await supabase
+          .from("products")
+          .update(payload)
+          .eq("id", currentProduct.id)
+          .select();
+      } else {
+        result = await supabase
+          .from("products")
+          .insert([payload])
+          .select();
+        productId = result.data?.[0]?.id;
+      }
+      if (result.error) throw result.error;
+      // Sync productimages table
+      if (productId) {
+        // 1. Delete removed images
+        const { data: oldImages } = await supabase
+          .from("productimages")
+          .select("id, url")
+          .eq("product_id", productId);
+        const keepUrls = (currentProduct.images || []).filter(img => img.url && !img.file).map((img) => img.url);
+        const toDelete = (oldImages || []).filter((img) => !keepUrls.includes(img.url));
+        for (const img of toDelete) {
+          await supabase.from("productimages").delete().eq("id", img.id);
+        }
+        // 2. Upload new images (those with File objects)
+        for (const img of (currentProduct.images || [])) {
+          if (img.file) {
+            const { imageUrl, error } = await uploadImage({ file: img.file, bucket: "images" });
+            if (!error && imageUrl) {
+              await supabase.from("productimages").insert({
+                product_id: productId,
+                url: imageUrl,
+                alt: img.alt || "",
+              });
+            }
+          }
+        }
+        // 3. Update alt text for existing images (those with url and id)
+        for (const img of (currentProduct.images || [])) {
+          if (img.id) {
+            await supabase
+              .from("productimages")
+              .update({ alt: img.alt || "" })
+              .eq("id", img.id);
+          }
+        }
+      }
+      await fetchProducts();
       setIsEditing(false);
       setCurrentProduct(null);
     } catch (error) {
@@ -164,6 +199,21 @@ export default function AdminPage() {
         [name]: value
       }));
     }
+  }
+
+  const handleImageAltChange = (e, index) => {
+    const { value } = e.target;
+    setCurrentProduct(prev => ({
+      ...prev,
+      images: prev.images.map((img, i) => i === index ? { ...img, alt: value } : img)
+    }));
+  }
+
+  const handleRemoveImage = (index) => {
+    setCurrentProduct(prev => ({
+      ...prev,
+      images: prev.images.filter((img, i) => i !== index)
+    }));
   }
 
   return (
@@ -228,43 +278,32 @@ export default function AdminPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">Upload Images</label>
+                <label className="block text-sm font-medium mb-1">Images</label>
+                {(currentProduct.images || []).map((img, index) => (
+                  <div key={index} className="flex items-center mb-2">
+                    <Image src={img.url} alt={img.alt} width={50} height={50} className="object-cover" />
+                    <input
+                      type="text"
+                      value={img.alt}
+                      onChange={(e) => handleImageAltChange(e, index)}
+                      className="w-full p-2 border rounded-md ml-2"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveImage(index)}
+                      className="btn-secondary ml-2"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
                 <input
                   type="file"
                   multiple
                   accept="image/*"
                   ref={imageInputRef}
                   onChange={handleImageChange}
-                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#2a4365] file:text-white hover:file:bg-[#2a4365]/80"
-                />
-                {imageUrls.length > 0 && (
-                  <div className="flex space-x-2 mt-2">
-                    {imageUrls.map((url, idx) => (
-                      <div key={idx} className="w-20 h-20 relative">
-                        <Image src={url} alt={`Preview ${idx}`} fill className="object-cover" />
-                      </div>
-                    ))}
-                  </div>
-                )}
-                <button
-                  type="button"
-                  onClick={handleClickUploadImagesButton}
-                  disabled={isPending}
-                  className="btn-secondary mt-2"
-                >
-                  {isPending ? "Uploading..." : "Upload Images"}
-                </button>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">Image URL</label>
-                <input
-                  type="text"
-                  name="image"
-                  value={currentProduct.image}
-                  onChange={handleChange}
-                  className="w-full p-2 border rounded-md"
-                  required
+                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#2a4365] file:text-white hover:file:bg-[#2a4365]/80 mt-2"
                 />
               </div>
 
@@ -320,46 +359,49 @@ export default function AdminPage() {
   </tr>
 </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-  {products.map((product) => (
-    <tr key={product.id}>
-      <td className="px-6 py-4 whitespace-nowrap">
-        <div className="flex items-center">
-          <div className="h-10 w-10 relative flex-shrink-0">
-            <Image
-              src={product.image || "/placeholder.svg"}
-              alt={product.name}
-              fill
-              className="object-cover object-center rounded-md"
-            />
+  {products.map((product) => {
+    const productImage = productImages.find(img => img.product_id === product.id);
+    return (
+      <tr key={product.id}>
+        <td className="px-6 py-4 whitespace-nowrap">
+          <div className="flex items-center">
+            <div className="h-10 w-10 relative flex-shrink-0">
+              <Image
+                src={productImage?.url || "/placeholder.svg"}
+                alt={product.name}
+                fill
+                className="object-cover object-center rounded-md"
+              />
+            </div>
+            <div className="ml-4">
+              <div className="text-sm font-medium text-gray-900">{product.name}</div>
+            </div>
           </div>
-          <div className="ml-4">
-            <div className="text-sm font-medium text-gray-900">{product.name}</div>
+        </td>
+        <td className="px-6 py-4 whitespace-nowrap">
+          <div className="text-sm text-gray-900">${product.price.toFixed(2)}</div>
+        </td>
+        <td className="px-6 py-4 whitespace-nowrap">
+          <div className="text-sm text-gray-900">
+            {categories.find(cat => cat.id === product.category_id)?.name || 'Uncategorized'}
           </div>
-        </div>
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap">
-        <div className="text-sm text-gray-900">${product.price.toFixed(2)}</div>
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap">
-        <div className="text-sm text-gray-900">
-          {categories.find(cat => cat.id === product.category_id)?.name || 'Uncategorized'}
-        </div>
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap">
-        <div className="text-sm text-gray-900">
-          {new Date(product.created_at).toLocaleString()}
-        </div>
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-        <button className="text-gray-600 hover:text-gray-900 mr-3" onClick={() => handleEdit(product)}>
-          <Edit className="h-4 w-4" />
-        </button>
-        <button className="text-gray-600 hover:text-red-600" onClick={() => handleDelete(product.id)}>
-          <Trash2 className="h-4 w-4" />
-        </button>
-      </td>
-    </tr>
-  ))}
+        </td>
+        <td className="px-6 py-4 whitespace-nowrap">
+          <div className="text-sm text-gray-900">
+            {new Date(product.created_at).toLocaleString()}
+          </div>
+        </td>
+        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+          <button className="text-gray-600 hover:text-gray-900 mr-3" onClick={() => handleEdit(product)}>
+            <Edit className="h-4 w-4" />
+          </button>
+          <button className="text-gray-600 hover:text-red-600" onClick={() => handleDelete(product.id)}>
+            <Trash2 className="h-4 w-4" />
+          </button>
+        </td>
+      </tr>
+    );
+  })}
 </tbody>
         </table>
       </div>

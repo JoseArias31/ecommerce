@@ -39,19 +39,30 @@ export default function Home() {
     setIsMounted(true)
   }, [])
 
-  // Fetch products from Supabase on mount
+  // Fetch products and their first image
   useEffect(() => {
     const fetchProducts = async () => {
-      const { data, error } = await supabase.from("products").select("*")
+      // Fetch all products
+      const { data: products, error } = await supabase.from("products").select("*");
       if (error) {
-        console.error("Error fetching products:", error)
-      } else {
-        setAllProducts(data)
-        setFilteredProducts(data)
+        console.error("Error fetching products:", error);
+        return;
       }
-    }
-
-    fetchProducts()
+      // Fetch all images for these products
+      const productIds = products.map(p => p.id);
+      const { data: images, error: imgError } = await supabase.from("productimages").select("id, product_id, url");
+      if (imgError) {
+        console.error("Error fetching images:", imgError);
+      }
+      // Map first image to each product
+      const productsWithImage = products.map(product => {
+        const imgs = (images || []).filter(img => img.product_id === product.id);
+        return { ...product, image: imgs[0]?.url || "/placeholder.svg" };
+      });
+      setAllProducts(productsWithImage);
+      setFilteredProducts(productsWithImage);
+    };
+    fetchProducts();
   }, [])
 
   useEffect(() => {
@@ -166,7 +177,7 @@ export default function Home() {
                 <div className="w-full h-64 md:h-96 relative overflow-hidden rounded-2xl shadow-lg">
                   <Image
                     key={featuredProducts[randomHeroIndex]?.id}
-                    src={featuredProducts[randomHeroIndex]?.image || "/placeholder.svg"}
+                    src={featuredProducts[randomHeroIndex]?.image && featuredProducts[randomHeroIndex]?.image !== "" ? featuredProducts[randomHeroIndex]?.image : "/placeholder.svg"}
                     alt={featuredProducts[randomHeroIndex]?.name || ""}
                     fill
                     className="object-cover object-center transition-transform duration-700"
@@ -235,7 +246,7 @@ export default function Home() {
                 <div className="relative">
                   <Link href={`/products/${product.id}`} className="block overflow-hidden">
                     <Image
-                      src={product.image || "/placeholder.svg"}
+                      src={product.image && product.image !== "" ? product.image : "/placeholder.svg"}
                       alt={product.name}
                       width={400}
                       height={400}

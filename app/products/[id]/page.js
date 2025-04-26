@@ -17,34 +17,39 @@ export default function ProductPage({ params }) {
   const [isZoomed, setIsZoomed] = useState(false)
   const [zoomPosition, setZoomPosition] = useState({ x: 0, y: 0 })
   const [recentlyViewed, setRecentlyViewed] = useState([])
+  const [productImages, setProductImages] = useState([])
   const quantity = useQuantityStore((state) => state.quantities[product?.id] || 1)
   const setQuantity = useQuantityStore((state) => state.setQuantity)
 
   useEffect(() => {
     const fetchData = async () => {
-      const { data, error } = await supabase.from("products").select("*").eq("id", id).single()
+      // Fetch product
+      const { data: product, error } = await supabase.from("products").select("*").eq("id", id).single();
       if (error) {
-        console.error("Error fetching product:", error)
-        setProduct(null)
+        console.error("Error fetching product:", error);
+        setProduct(null);
+        setProductImages([]);
       } else {
-        setProduct(data)
+        setProduct(product);
+        // Fetch images for this product
+        const { data: images, error: imgError } = await supabase.from("productimages").select("id, url, alt").eq("product_id", id);
+        if (imgError) {
+          console.error("Error fetching images:", imgError);
+          setProductImages([]);
+        } else {
+          setProductImages(images);
+        }
       }
-      const { data: relData, error: relError } = await supabase.from("products").select("*").neq("id", id).limit(4)
-      if (relError) console.error("Error fetching related products:", relError)
-      else setRelatedProducts(relData)
-      setLoading(false)
-    }
+      // Fetch related products
+      const { data: relData, error: relError } = await supabase.from("products").select("*").neq("id", id).limit(4);
+      if (relError) console.error("Error fetching related products:", relError);
+      else setRelatedProducts(relData);
+      setLoading(false);
+    };
+    fetchData();
+  }, [id]);
 
-    fetchData()
-  }, [id])
-
-  // Generate placeholder images for the product
-  const productImages = [
-    product?.image || "/placeholder.svg",
-    "/placeholder.svg?height=600&width=600",
-    "/placeholder.svg?height=600&width=600",
-    "/placeholder.svg?height=600&width=600",
-  ]
+  const galleryImages = productImages.length > 0 ? productImages.map(img => img.url) : ["/placeholder.svg"];
 
   // Store recently viewed products in localStorage
   useEffect(() => {
@@ -127,7 +132,7 @@ export default function ProductPage({ params }) {
             </div>
 
             <Image
-              src={productImages[selectedImage] || "/placeholder.svg"}
+              src={galleryImages[selectedImage]}
               alt={product.name}
               fill
               className={`object-cover object-center transition-transform duration-300 ${
@@ -145,7 +150,7 @@ export default function ProductPage({ params }) {
 
           {/* Thumbnails */}
           <div className="flex space-x-2 overflow-x-auto pb-2">
-            {productImages.map((image, index) => (
+            {galleryImages.map((image, index) => (
               <button
                 key={index}
                 onClick={() => setSelectedImage(index)}
@@ -154,7 +159,7 @@ export default function ProductPage({ params }) {
                 }`}
               >
                 <Image
-                  src={image || "/placeholder.svg"}
+                  src={image}
                   alt={`${product.name} - Image ${index + 1}`}
                   fill
                   className="object-cover object-center"
