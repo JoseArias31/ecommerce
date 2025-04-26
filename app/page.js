@@ -14,6 +14,7 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState("")
   const [allProducts, setAllProducts] = useState([])
   const [filteredProducts, setFilteredProducts] = useState([])
+  const [categories, setCategories] = useState(["all"])
   const { getQuantity, setQuantity } = useQuantityStore()
   const [cartCount, setCartCount] = useState(0);
 
@@ -43,7 +44,9 @@ export default function Home() {
   useEffect(() => {
     const fetchProducts = async () => {
       // Fetch all products
-      const { data: products, error } = await supabase.from("products").select("*");
+      const { data: products, error } = await supabase
+        .from("products")
+        .select("*, categories(name)"); // Join categories table to get name
       if (error) {
         console.error("Error fetching products:", error);
         return;
@@ -54,23 +57,32 @@ export default function Home() {
       if (imgError) {
         console.error("Error fetching images:", imgError);
       }
-      // Map first image to each product
+      // Map first image and category name to each product
       const productsWithImage = products.map(product => {
         const imgs = (images || []).filter(img => img.product_id === product.id);
-        return { ...product, image: imgs[0]?.url || "/placeholder.svg" };
+        return {
+          ...product,
+          image: imgs[0]?.url || "/placeholder.svg",
+          category: product.categories?.name || null, // Map category name
+        };
       });
       setAllProducts(productsWithImage);
       setFilteredProducts(productsWithImage);
+
+      // Fetch categories from DB
+      const { data: cats, error: catError } = await supabase.from("categories").select("name");
+      if (!catError && cats) {
+        setCategories(["all", ...cats.map(cat => cat.name)]);
+      }
     };
     fetchProducts();
   }, [])
 
   useEffect(() => {
     let result = allProducts
-
     // Filter by category
     if (activeCategory !== "all") {
-      result = result.filter((product) => (product.category || "uncategorized") === activeCategory)
+      result = result.filter((product) => product.category === activeCategory)
     }
 
     // Filter by search query
@@ -86,14 +98,11 @@ export default function Home() {
     setFilteredProducts(result)
   }, [activeCategory, searchQuery, allProducts])
 
-  // Featured products (first 3 products for demo)
-  const featuredProducts = allProducts.slice(0, 3)
+  // Featured products: show all filtered products for the active category
+  const featuredProducts = filteredProducts;
 
   // New arrivals (last 4 products for demo)
   const newArrivals = [...allProducts].reverse().slice(0, 4)
-
-  // Categories (derived from products)
-  const categories = ["all", ...new Set(allProducts.map((product) => product.category || "uncategorized"))]
 
   // Random hero carousel index (random mode)
   const [randomHeroIndex, setRandomHeroIndex] = useState(

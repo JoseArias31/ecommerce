@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import Image from "next/image"
-import { Edit, Trash2, Plus } from "lucide-react"
+import { Edit, Trash2, Plus, FolderPlus } from "lucide-react"
 import { supabase } from "@/lib/supabaseClient"
 import { uploadImage } from "@/lib/storage/cliente";
 import { useRef, useTransition } from "react";
@@ -216,22 +216,91 @@ export default function AdminPage() {
     }));
   }
 
+  // Add state for category modal
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [newCategory, setNewCategory] = useState({ name: "", description: "" });
+  const [categoryLoading, setCategoryLoading] = useState(false);
+
+  const handleAddCategory = async (e) => {
+    e.preventDefault();
+    if (!newCategory.name) {
+      alert("Category name is required");
+      return;
+    }
+    setCategoryLoading(true);
+    const { error } = await supabase.from("categories").insert([
+      { name: newCategory.name, description: newCategory.description }
+    ]);
+    setCategoryLoading(false);
+    if (error) {
+      alert("Error adding category: " + error.message);
+      return;
+    }
+    setShowCategoryModal(false);
+    setNewCategory({ name: "", description: "" });
+    fetchCategories();
+  };
+
   return (
-    <div className="container mx-auto px-4 py-12">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-        <button className="btn-primary flex items-center" onClick={handleAddNew}>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Product
-        </button>
+    <div className="container mx-auto px-2 sm:px-4 py-6 sm:py-12">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold">Admin Dashboard</h1>
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          <button className="btn-primary flex items-center w-full sm:w-auto justify-center" onClick={handleAddNew}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Product
+          </button>
+          <button className="btn-secondary flex items-center w-full sm:w-auto justify-center" onClick={() => setShowCategoryModal(true)}>
+            <FolderPlus className="h-4 w-4 mr-2" />
+            Add Category
+          </button>
+        </div>
       </div>
 
+      {/* Category Modal */}
+      {showCategoryModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
+            <h2 className="text-lg font-bold mb-4">Add New Category</h2>
+            <form onSubmit={handleAddCategory}>
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-1">Name</label>
+                <input
+                  type="text"
+                  className="w-full p-2 border rounded-md"
+                  value={newCategory.name}
+                  onChange={e => setNewCategory(c => ({ ...c, name: e.target.value }))}
+                  required
+                />
+              </div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-1">Description</label>
+                <textarea
+                  className="w-full p-2 border rounded-md"
+                  value={newCategory.description}
+                  onChange={e => setNewCategory(c => ({ ...c, description: e.target.value }))}
+                  rows={3}
+                />
+              </div>
+              <div className="flex justify-end gap-2 mt-6">
+                <button type="button" className="btn-secondary" onClick={() => setShowCategoryModal(false)}>
+                  Cancel
+                </button>
+                <button type="submit" className="btn-primary" disabled={categoryLoading}>
+                  {categoryLoading ? "Saving..." : "Save Category"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {isEditing ? (
-        <div className="bg-gray-50 p-6 rounded-lg mb-8">
-          <h2 className="text-xl font-bold mb-4">{currentProduct.id ? "Edit Product" : "Add New Product"}</h2>
+        <div className="bg-gray-50 p-4 sm:p-6 rounded-lg mb-8">
+          <h2 className="text-lg sm:text-xl font-bold mb-4">{currentProduct.id ? "Edit Product" : "Add New Product"}</h2>
 
           <form onSubmit={handleSave}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
               <div>
                 <label className="block text-sm font-medium mb-1">Name</label>
                 <input
@@ -239,7 +308,7 @@ export default function AdminPage() {
                   name="name"
                   value={currentProduct.name}
                   onChange={handleChange}
-                  className="w-full p-2 border rounded-md"
+                  className="w-full p-2 border rounded-md text-sm"
                   required
                 />
               </div>
@@ -251,7 +320,7 @@ export default function AdminPage() {
                   name="price"
                   value={Number.isNaN(currentProduct.price) ? "" : currentProduct.price}
                   onChange={handleChange}
-                  className="w-full p-2 border rounded-md"
+                  className="w-full p-2 border rounded-md text-sm"
                   step="0.01"
                   min="0"
                   required
@@ -261,37 +330,38 @@ export default function AdminPage() {
               <div>
                 <label className="block text-sm font-medium mb-1" htmlFor="category_id">Category</label>
                 <select
-  id="category_id"
-  name="category_id"
-  value={currentProduct.category_id || ""}
-  onChange={handleChange}
-  className="w-full p-2 border rounded-md"
-  required
->
-  <option value="">Select a category</option>
-  {categories.map((cat) => (
-    <option key={cat.id} value={cat.id}>  {/* No .toString() needed */}
-      {cat.name}
-    </option>
-  ))}
-</select>
+                  id="category_id"
+                  name="category_id"
+                  value={currentProduct.category_id || ""}
+                  onChange={handleChange}
+                  className="w-full p-2 border rounded-md text-sm"
+                  required
+                >
+                  <option value="">Select a category</option>
+                  {categories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.name}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div>
                 <label className="block text-sm font-medium mb-1">Images</label>
                 {(currentProduct.images || []).map((img, index) => (
-                  <div key={index} className="flex items-center mb-2">
-                    <Image src={img.url} alt={img.alt} width={50} height={50} className="object-cover" />
+                  <div key={index} className="flex flex-col xs:flex-row items-start xs:items-center mb-2 gap-2 xs:gap-0">
+                    <Image src={img.url} alt={img.alt} width={50} height={50} className="object-cover rounded" />
                     <input
                       type="text"
                       value={img.alt}
                       onChange={(e) => handleImageAltChange(e, index)}
-                      className="w-full p-2 border rounded-md ml-2"
+                      className="w-full p-2 border rounded-md ml-0 xs:ml-2 text-sm mt-2 xs:mt-0"
+                      placeholder="Alt text"
                     />
                     <button
                       type="button"
                       onClick={() => handleRemoveImage(index)}
-                      className="btn-secondary ml-2"
+                      className="btn-secondary ml-0 xs:ml-2 mt-2 xs:mt-0"
                     >
                       Remove
                     </button>
@@ -313,17 +383,17 @@ export default function AdminPage() {
                   name="description"
                   value={currentProduct.description}
                   onChange={handleChange}
-                  className="w-full p-2 border rounded-md"
+                  className="w-full p-2 border rounded-md text-sm"
                   rows="3"
                   required
                 />
               </div>
             </div>
 
-            <div className="flex justify-end mt-6 space-x-4">
+            <div className="flex flex-col sm:flex-row justify-end mt-6 gap-2 sm:gap-4">
               <button
                 type="button"
-                className="btn-secondary"
+                className="btn-secondary w-full sm:w-auto"
                 onClick={() => {
                   setIsEditing(false)
                   setCurrentProduct(null)
@@ -331,7 +401,7 @@ export default function AdminPage() {
               >
                 Cancel
               </button>
-              <button type="submit" className="btn-primary">
+              <button type="submit" className="btn-primary w-full sm:w-auto">
                 Save Product
               </button>
             </div>
@@ -339,70 +409,62 @@ export default function AdminPage() {
         </div>
       ) : null}
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
-  <tr>
-    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-      Product
-    </th>
-    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
-    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-      Category
-    </th>
-    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-      Created At
-    </th>
-    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-      Actions
-    </th>
-  </tr>
-</thead>
+      <div className="bg-white rounded-lg shadow overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200 text-sm">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[120px]">Product</th>
+              <th className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[80px]">Price</th>
+              <th className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[100px]">Category</th>
+              <th className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[140px]">Created At</th>
+              <th className="px-2 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[90px]">Actions</th>
+            </tr>
+          </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-  {products.map((product) => {
-    const productImage = productImages.find(img => img.product_id === product.id);
-    return (
-      <tr key={product.id}>
-        <td className="px-6 py-4 whitespace-nowrap">
-          <div className="flex items-center">
-            <div className="h-10 w-10 relative flex-shrink-0">
-              <Image
-                src={productImage?.url || "/placeholder.svg"}
-                alt={product.name}
-                fill
-                className="object-cover object-center rounded-md"
-              />
-            </div>
-            <div className="ml-4">
-              <div className="text-sm font-medium text-gray-900">{product.name}</div>
-            </div>
-          </div>
-        </td>
-        <td className="px-6 py-4 whitespace-nowrap">
-          <div className="text-sm text-gray-900">${product.price.toFixed(2)}</div>
-        </td>
-        <td className="px-6 py-4 whitespace-nowrap">
-          <div className="text-sm text-gray-900">
-            {categories.find(cat => cat.id === product.category_id)?.name || 'Uncategorized'}
-          </div>
-        </td>
-        <td className="px-6 py-4 whitespace-nowrap">
-          <div className="text-sm text-gray-900">
-            {new Date(product.created_at).toLocaleString()}
-          </div>
-        </td>
-        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-          <button className="text-gray-600 hover:text-gray-900 mr-3" onClick={() => handleEdit(product)}>
-            <Edit className="h-4 w-4" />
-          </button>
-          <button className="text-gray-600 hover:text-red-600" onClick={() => handleDelete(product.id)}>
-            <Trash2 className="h-4 w-4" />
-          </button>
-        </td>
-      </tr>
-    );
-  })}
-</tbody>
+            {products.map((product) => {
+              const productImage = productImages.find(img => img.product_id === product.id);
+              return (
+                <tr key={product.id}>
+                  <td className="px-2 sm:px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      <div className="h-10 w-10 relative flex-shrink-0">
+                        <Image
+                          src={productImage?.url || "/placeholder.svg"}
+                          alt={product.name}
+                          fill
+                          className="object-cover object-center rounded-md"
+                        />
+                      </div>
+                      <div className="ml-2 sm:ml-4">
+                        <div className="text-sm font-medium text-gray-900 break-all">{product.name}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-2 sm:px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">${product.price.toFixed(2)}</div>
+                  </td>
+                  <td className="px-2 sm:px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">
+                      {categories.find(cat => cat.id === product.category_id)?.name || 'Uncategorized'}
+                    </div>
+                  </td>
+                  <td className="px-2 sm:px-6 py-4 whitespace-nowrap">
+                    <div className="text-xs text-gray-900">
+                      {new Date(product.created_at).toLocaleString()}
+                    </div>
+                  </td>
+                  <td className="px-2 sm:px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <button className="text-gray-600 hover:text-gray-900 mr-2 sm:mr-3" onClick={() => handleEdit(product)}>
+                      <Edit className="h-4 w-4" />
+                    </button>
+                    <button className="text-gray-600 hover:text-red-600" onClick={() => handleDelete(product.id)}>
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
         </table>
       </div>
     </div>
