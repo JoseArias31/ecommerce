@@ -4,7 +4,7 @@ import { useEffect, useState, use } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { supabase } from "@/lib/supabaseClient"
-import { ArrowLeft, Heart, Share2, Truck, ShieldCheck, RotateCcw, Star, ChevronRight } from "lucide-react"
+import { ArrowLeft, Heart, Share2, Truck, ShieldCheck, RotateCcw, Star, ChevronRight, ChevronLeft } from "lucide-react"
 import AddToCartButton from "@/components/add-to-cart-button"
 import { useQuantityStore } from "@/store/quantityStore"
 
@@ -50,6 +50,10 @@ export default function ProductPage({ params }) {
   }, [id]);
 
   const galleryImages = productImages.length > 0 ? productImages.map(img => img.url) : ["/placeholder.svg"];
+
+  const showArrows = galleryImages.length > 1;
+  const handlePrev = () => setSelectedImage((prev) => (prev === 0 ? galleryImages.length - 1 : prev - 1));
+  const handleNext = () => setSelectedImage((prev) => (prev === galleryImages.length - 1 ? 0 : prev + 1));
 
   // Store recently viewed products in localStorage
   useEffect(() => {
@@ -116,6 +120,42 @@ export default function ProductPage({ params }) {
             onMouseLeave={() => setIsZoomed(false)}
             onMouseMove={handleImageHover}
           >
+            {/* Overlayed minimal arrows */}
+            {showArrows && (
+              <>
+                <button
+                  type="button"
+                  aria-label="Previous image"
+                  onClick={handlePrev}
+                  className="pointer-events-auto bg-white/70 hover:bg-white transition p-1 rounded-full shadow border border-gray-200 absolute left-2 top-1/2 -translate-y-1/2 z-10"
+                  style={{touchAction: 'manipulation'}}
+                >
+                  <ChevronLeft className="h-5 w-5 text-gray-700" />
+                </button>
+                <button
+                  type="button"
+                  aria-label="Next image"
+                  onClick={handleNext}
+                  className="pointer-events-auto bg-white/70 hover:bg-white transition p-1 rounded-full shadow border border-gray-200 absolute right-2 top-1/2 -translate-y-1/2 z-10"
+                  style={{touchAction: 'manipulation'}}
+                >
+                  <ChevronRight className="h-5 w-5 text-gray-700" />
+                </button>
+              </>
+            )}
+            <Image
+              src={galleryImages[selectedImage]}
+              alt={product.name}
+              fill
+              className={`object-cover object-center transition-transform duration-300 ${isZoomed ? "scale-150" : "scale-100"}`}
+              style={
+                isZoomed
+                  ? {
+                      transformOrigin: `${zoomPosition.x}% ${zoomPosition.y}%`,
+                    }
+                  : {}
+              }
+            />
             <div className="absolute top-4 right-4 z-10 flex space-x-2">
               <button
                 className="bg-white p-2 rounded-full shadow-md hover:bg-gray-100 transition-colors"
@@ -130,22 +170,6 @@ export default function ProductPage({ params }) {
                 <Share2 className="h-5 w-5 text-gray-700" />
               </button>
             </div>
-
-            <Image
-              src={galleryImages[selectedImage]}
-              alt={product.name}
-              fill
-              className={`object-cover object-center transition-transform duration-300 ${
-                isZoomed ? "scale-150" : "scale-100"
-              }`}
-              style={
-                isZoomed
-                  ? {
-                      transformOrigin: `${zoomPosition.x}% ${zoomPosition.y}%`,
-                    }
-                  : {}
-              }
-            />
           </div>
 
           {/* Thumbnails */}
