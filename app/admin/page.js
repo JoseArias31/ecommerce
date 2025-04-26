@@ -4,12 +4,56 @@ import { useState, useEffect } from "react"
 import Image from "next/image"
 import { Edit, Trash2, Plus } from "lucide-react"
 import { supabase } from "@/lib/supabaseClient"
+import { uploadImage } from "@/lib/storage/cliente";
+import { useRef, useTransition } from "react";
+import { convertBlobUrlToFile } from "@/lib/utils";
 
 export default function AdminPage() {
   const [products, setProducts] = useState([])
   const [categories, setCategories] = useState([])
   const [isEditing, setIsEditing] = useState(false)
   const [currentProduct, setCurrentProduct] = useState(null)
+  const [imageUrls, setImageUrls] = useState([]);
+
+  const imageInputRef = useRef(null);
+
+  const handleImageChange = (e) => {
+    if (e.target.files) {
+      const filesArray = Array.from(e.target.files);
+      const newImageUrls = filesArray.map((file) => URL.createObjectURL(file));
+
+      setImageUrls([...imageUrls, ...newImageUrls]);
+    }
+  };
+
+  const [isPending, startTransition] = useTransition();
+
+  const handleClickUploadImagesButton = async () => {
+    startTransition(async () => {
+      let urls = [];
+      for (const url of imageUrls) {
+        const imageFile = await convertBlobUrlToFile(url);
+
+        const { imageUrl, error } = await uploadImage({
+          file: imageFile,
+          bucket: "images",
+        });
+
+        if (error) {
+          console.error(error);
+          return;
+        }
+
+        urls.push(imageUrl);
+      }
+
+      console.log(urls);
+      if (urls.length > 0) {
+        setCurrentProduct(prev => ({ ...prev, image: urls[0] }));
+      }
+      setImageUrls([]);
+    });
+  };
 
   // Load products from Supabase on mount
   const fetchProducts = async () => {
@@ -181,6 +225,35 @@ export default function AdminPage() {
     </option>
   ))}
 </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">Upload Images</label>
+                <input
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  ref={imageInputRef}
+                  onChange={handleImageChange}
+                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#2a4365] file:text-white hover:file:bg-[#2a4365]/80"
+                />
+                {imageUrls.length > 0 && (
+                  <div className="flex space-x-2 mt-2">
+                    {imageUrls.map((url, idx) => (
+                      <div key={idx} className="w-20 h-20 relative">
+                        <Image src={url} alt={`Preview ${idx}`} fill className="object-cover" />
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={handleClickUploadImagesButton}
+                  disabled={isPending}
+                  className="btn-secondary mt-2"
+                >
+                  {isPending ? "Uploading..." : "Upload Images"}
+                </button>
               </div>
 
               <div>
