@@ -1,23 +1,42 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, use } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { products } from "@/lib/products"
+import { supabase } from "@/lib/supabaseClient"
 import { ArrowLeft, Heart, Share2, Truck, ShieldCheck, RotateCcw, Star, ChevronRight } from "lucide-react"
 import AddToCartButton from "@/components/add-to-cart-button"
 import { useQuantityStore } from "@/store/quantityStore"
-import { use } from "react"
 
 export default function ProductPage({ params }) {
   const { id } = use(params)
-  const product = products.find((p) => p.id === Number.parseInt(id))
+  const [product, setProduct] = useState(null)
+  const [relatedProducts, setRelatedProducts] = useState([])
+  const [loading, setLoading] = useState(true)
   const [selectedImage, setSelectedImage] = useState(0)
   const [isZoomed, setIsZoomed] = useState(false)
   const [zoomPosition, setZoomPosition] = useState({ x: 0, y: 0 })
   const [recentlyViewed, setRecentlyViewed] = useState([])
   const quantity = useQuantityStore((state) => state.quantities[product?.id] || 1)
   const setQuantity = useQuantityStore((state) => state.setQuantity)
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const { data, error } = await supabase.from("products").select("*").eq("id", id).single()
+      if (error) {
+        console.error("Error fetching product:", error)
+        setProduct(null)
+      } else {
+        setProduct(data)
+      }
+      const { data: relData, error: relError } = await supabase.from("products").select("*").neq("id", id).limit(4)
+      if (relError) console.error("Error fetching related products:", relError)
+      else setRelatedProducts(relData)
+      setLoading(false)
+    }
+
+    fetchData()
+  }, [id])
 
   // Generate placeholder images for the product
   const productImages = [
@@ -48,8 +67,13 @@ export default function ProductPage({ params }) {
     setZoomPosition({ x, y })
   }
 
-  // Get related products (simple implementation)
-  const relatedProducts = products.filter((p) => p.id !== product?.id).slice(0, 4)
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-12 text-center">
+        <span>Loading...</span>
+      </div>
+    )
+  }
 
   if (!product) {
     return (
@@ -169,8 +193,6 @@ export default function ProductPage({ params }) {
             <h2 className="text-lg font-medium mb-2">Description</h2>
             <p className="text-gray-600">{product.description}</p>
           </div>
-
-          
 
           {/* Add to Cart Button */}
           <div className="mt-8">

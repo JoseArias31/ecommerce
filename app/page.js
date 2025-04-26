@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { products } from "@/lib/products"
+import { supabase } from "@/lib/supabaseClient"
 import AddToCartButton from "@/components/add-to-cart-button"
 import { ArrowRight, Star, TrendingUp, Package, Clock, Heart, ShoppingBag } from "lucide-react"
 import { useQuantityStore } from "@/store/quantityStore"
@@ -12,7 +12,8 @@ export default function Home() {
   const [isMounted, setIsMounted] = useState(false)
   const [activeCategory, setActiveCategory] = useState("all")
   const [searchQuery, setSearchQuery] = useState("")
-  const [filteredProducts, setFilteredProducts] = useState(products)
+  const [allProducts, setAllProducts] = useState([])
+  const [filteredProducts, setFilteredProducts] = useState([])
   const { getQuantity, setQuantity } = useQuantityStore()
   const [cartCount, setCartCount] = useState(0);
 
@@ -34,13 +35,27 @@ export default function Home() {
     return () => window.removeEventListener('cartUpdated', handleCartUpdate);
   }, []);
 
-
   useEffect(() => {
     setIsMounted(true)
   }, [])
 
+  // Fetch products from Supabase on mount
   useEffect(() => {
-    let result = products
+    const fetchProducts = async () => {
+      const { data, error } = await supabase.from("products").select("*")
+      if (error) {
+        console.error("Error fetching products:", error)
+      } else {
+        setAllProducts(data)
+        setFilteredProducts(data)
+      }
+    }
+
+    fetchProducts()
+  }, [])
+
+  useEffect(() => {
+    let result = allProducts
 
     // Filter by category
     if (activeCategory !== "all") {
@@ -58,16 +73,16 @@ export default function Home() {
     }
 
     setFilteredProducts(result)
-  }, [activeCategory, searchQuery])
+  }, [activeCategory, searchQuery, allProducts])
 
   // Featured products (first 3 products for demo)
-  const featuredProducts = products.slice(0, 3)
+  const featuredProducts = allProducts.slice(0, 3)
 
   // New arrivals (last 4 products for demo)
-  const newArrivals = [...products].reverse().slice(0, 4)
+  const newArrivals = [...allProducts].reverse().slice(0, 4)
 
   // Categories (derived from products)
-  const categories = ["all", ...new Set(products.map((product) => product.category || "uncategorized"))]
+  const categories = ["all", ...new Set(allProducts.map((product) => product.category || "uncategorized"))]
 
   // Random hero carousel index (random mode)
   const [randomHeroIndex, setRandomHeroIndex] = useState(
@@ -150,9 +165,9 @@ export default function Home() {
               <div className="flex items-center justify-center">
                 <div className="w-full h-64 md:h-96 relative overflow-hidden rounded-2xl shadow-lg">
                   <Image
-                    key={featuredProducts[randomHeroIndex].id}
-                    src={featuredProducts[randomHeroIndex].image || "/placeholder.svg"}
-                    alt={featuredProducts[randomHeroIndex].name}
+                    key={featuredProducts[randomHeroIndex]?.id}
+                    src={featuredProducts[randomHeroIndex]?.image || "/placeholder.svg"}
+                    alt={featuredProducts[randomHeroIndex]?.name || ""}
                     fill
                     className="object-cover object-center transition-transform duration-700"
                   />
@@ -160,9 +175,9 @@ export default function Home() {
                     20% OFF
                   </div>
                   <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-4 text-white">
-                    <h3 className="text-xl font-bold">{featuredProducts[randomHeroIndex].name}</h3>
-                    <p className="text-sm">${featuredProducts[randomHeroIndex].price}</p>
-                    <Link href={`/products/${featuredProducts[randomHeroIndex].id}`} className="underline text-sm">
+                    <h3 className="text-xl font-bold">{featuredProducts[randomHeroIndex]?.name}</h3>
+                    <p className="text-sm">${featuredProducts[randomHeroIndex]?.price ?? '0.00'}</p>
+                    <Link href={`/products/${featuredProducts[randomHeroIndex]?.id || ''}`} className="underline text-sm">
                       View Details
                     </Link>
                   </div>
@@ -172,131 +187,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-
-      {/* Compact Hero Section */}
-      {/* <section className="border-b border-gray-100">
-        <div className="container mx-auto px-6 max-w-7xl">
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 py-8">
-            {/* Left side - Search and Categories */}
-      {/*      <div className="md:col-span-4 lg:col-span-3 flex flex-col justify-center">
-              <h1 className="text-2xl font-bold mb-6 text-gray-900">
-                Find your perfect <span className="text-[#2a4365]">style</span>
-              </h1>
-
-              <div className="relative w-full group mb-6">
-                <input
-                  type="text"
-                  placeholder="Search products..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3 border border-gray-100 bg-gray-50 rounded-full focus:outline-none focus:ring-2 focus:ring-[#2a4365]/20 focus:border-[#2a4365] transition-all duration-300"
-                />
-                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-[#2a4365] transition-colors duration-300" />
-              </div>
-
-              <div className="flex flex-wrap gap-2 mb-6">
-                {categories.slice(0, 4).map((category) => (
-                  <button
-                    key={category}
-                    onClick={() => setActiveCategory(category)}
-                    className={`px-4 py-2 rounded-full text-sm whitespace-nowrap transition-all duration-300 ${
-                      activeCategory === category
-                        ? "bg-[#2a4365] text-white shadow-sm"
-                        : "bg-gray-50 text-gray-700 hover:bg-gray-100"
-                    }`}
-                  >
-                    {category.charAt(0).toUpperCase() + category.slice(1)}
-                  </button>
-                ))}
-              </div>
-
-              <Link
-                href="#featured"
-                className="group inline-flex items-center text-[#2a4365] font-medium text-sm hover:underline"
-              >
-                View all categories
-                <ChevronRight className="w-4 h-4 ml-1 transition-transform duration-300 group-hover:translate-x-1" />
-              </Link>
-            </div>
-
-            {/* Right side - Featured Product Highlight */}
-      {/*      <div className="md:col-span-8 lg:col-span-9 grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Featured Product Card */}
-      {/*        <div className="md:col-span-2 relative overflow-hidden rounded-2xl bg-[#f8fafc] group">
-                <div className="absolute inset-0 bg-gradient-to-r from-[#2a4365]/10 to-transparent z-10"></div>
-                <div className="relative z-20 p-6 flex flex-col h-full">
-                  <span className="inline-block px-3 py-1 bg-white/80 backdrop-blur-sm text-[#2a4365] rounded-full text-xs font-medium mb-4 self-start">
-                    Featured Collection
-                  </span>
-                  <h2 className="text-xl font-bold text-gray-900 mb-2">Premium Quality Products</h2>
-                  <p className="text-gray-600 text-sm mb-4">Discover our handpicked selection of premium items</p>
-                  <Link
-                    href="#featured"
-                    className="mt-auto inline-flex items-center text-[#2a4365] font-medium text-sm hover:underline"
-                  >
-                    Shop now
-                    <ArrowRight className="w-4 h-4 ml-1 transition-transform duration-300 group-hover:translate-x-1" />
-                  </Link>
-                </div>
-                <Image
-                  src="/placeholder.svg?height=300&width=500"
-                  alt="Featured collection"
-                  width={500}
-                  height={300}
-                  className="absolute right-0 bottom-0 w-2/3 h-full object-cover object-right"
-                />
-              </div>
-
-              {/* Two Small Promo Cards */}
-      {/*        <div className="md:col-span-1 flex flex-col gap-4">
-                <div className="flex-1 relative overflow-hidden rounded-2xl bg-[#f1f5f9] group">
-                  <div className="relative z-20 p-5 flex flex-col h-full">
-                    <span className="inline-block px-3 py-1 bg-white/80 backdrop-blur-sm text-gray-700 rounded-full text-xs font-medium mb-2 self-start">
-                      New Arrivals
-                    </span>
-                    <Link
-                      href="#new-arrivals"
-                      className="mt-auto inline-flex items-center text-gray-900 font-medium text-sm hover:underline"
-                    >
-                      Explore
-                      <ArrowRight className="w-3 h-3 ml-1 transition-transform duration-300 group-hover:translate-x-1" />
-                    </Link>
-                  </div>
-                  <Image
-                    src="/placeholder.svg?height=150&width=200"
-                    alt="New arrivals"
-                    width={200}
-                    height={150}
-                    className="absolute right-0 bottom-0 w-1/2 h-full object-cover object-right"
-                  />
-                </div>
-
-                <div className="flex-1 relative overflow-hidden rounded-2xl bg-[#f8fafc] group">
-                  <div className="relative z-20 p-5 flex flex-col h-full">
-                    <span className="inline-block px-3 py-1 bg-black/10 backdrop-blur-sm text-gray-700 rounded-full text-xs font-medium mb-2 self-start">
-                      Special Offer
-                    </span>
-                    <Link
-                      href="#featured"
-                      className="mt-auto inline-flex items-center text-gray-900 font-medium text-sm hover:underline"
-                    >
-                      Get 20% Off
-                      <ArrowRight className="w-3 h-3 ml-1 transition-transform duration-300 group-hover:translate-x-1" />
-                    </Link>
-                  </div>
-                  <Image
-                    src="/placeholder.svg?height=150&width=200"
-                    alt="Special offer"
-                    width={200}
-                    height={150}
-                    className="absolute right-0 bottom-0 w-1/2 h-full object-cover object-right"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section> */}
 
       {/* Category Pills */}
       <section id="categories" className="container mx-auto px-6 py-8">
