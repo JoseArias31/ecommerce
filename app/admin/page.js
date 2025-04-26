@@ -20,8 +20,10 @@ export default function AdminPage() {
 
   const fetchCategories = async () => {
     const { data, error } = await supabase.from("categories").select("id,name")
+    console.log('Fetched categories:', data)
     if (error) console.error("Error fetching categories:", error)
     else setCategories(data)
+ 
   }
 
   useEffect(() => {
@@ -59,45 +61,47 @@ export default function AdminPage() {
   }
 
   const handleSave = async (e) => {
-    e.preventDefault()
-    
-    // Handle category_id conversion (allow null if empty string)
-    const categoryId = currentProduct.category_id === "" ? null : Number(currentProduct.category_id)
-    
+    e.preventDefault();
+  
+    // Validate category selection
+    if (!currentProduct.category_id) {
+      alert("Please select a category for the product.");
+      return;
+    }
+  
     const payload = {
       name: currentProduct.name,
       description: currentProduct.description,
       price: currentProduct.price,
       image: currentProduct.image,
-      category_id: categoryId,
-    }
+      category_id: currentProduct.category_id, // No conversion needed (Supabase handles it)
+    };
   
-    let data, error
-    if (currentProduct.id) {
-      ({ data, error } = await supabase
-        .from('products')
-        .update(payload)
-        .eq('id', currentProduct.id)
-        .select())
-    } else {
-      ({ data, error } = await supabase
-        .from('products')
-        .insert([payload])
-        .select())
-    }
+    console.log("Payload being saved:", payload);
   
-    if (error) {
-      console.error('Error saving product:', error)
-    } else {
-      if (currentProduct.id) {
-        setProducts(prev => prev.map(p => p.id === data[0].id ? data[0] : p))
-      } else {
-        setProducts(prev => [...prev, data[0]])
-      }
-      setIsEditing(false)
-      setCurrentProduct(null)
+    try {
+      const { data, error } = currentProduct.id
+        ? await supabase
+            .from("products")
+            .update(payload)
+            .eq("id", currentProduct.id)
+            .select()
+        : await supabase
+            .from("products")
+            .insert([payload])
+            .select();
+  
+      if (error) throw error;
+  
+      // Refresh data
+      fetchProducts();
+      setIsEditing(false);
+      setCurrentProduct(null);
+    } catch (error) {
+      console.error("Error saving product:", error);
+      alert(`Error: ${error.message}`);
     }
-  }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -172,7 +176,7 @@ export default function AdminPage() {
 >
   <option value="">Select a category</option>
   {categories.map((cat) => (
-    <option key={cat.id} value={cat.id.toString()}>
+    <option key={cat.id} value={cat.id}>  {/* No .toString() needed */}
       {cat.name}
     </option>
   ))}
@@ -225,65 +229,65 @@ export default function AdminPage() {
 
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Product
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Category
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Created At
-              </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
-              </th>
-            </tr>
-          </thead>
+        <thead className="bg-gray-50">
+  <tr>
+    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+      Product
+    </th>
+    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+      Category
+    </th>
+    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+      Created At
+    </th>
+    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+      Actions
+    </th>
+  </tr>
+</thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {products.map((product) => (
-              <tr key={product.id}>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex items-center">
-                    <div className="h-10 w-10 relative flex-shrink-0">
-                      <Image
-                        src={product.image || "/placeholder.svg"}
-                        alt={product.name}
-                        fill
-                        className="object-cover object-center rounded-md"
-                      />
-                    </div>
-                    <div className="ml-4">
-                      <div className="text-sm font-medium text-gray-900">{product.name}</div>
-                    </div>
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">${product.price.toFixed(2)}</div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
-                    {categories.find((c) => c.id === product.category_id)?.name || "Unknown"}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">
-                    {new Date(product.created_at).toLocaleString()}
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <button className="text-gray-600 hover:text-gray-900 mr-3" onClick={() => handleEdit(product)}>
-                    <Edit className="h-4 w-4" />
-                  </button>
-                  <button className="text-gray-600 hover:text-red-600" onClick={() => handleDelete(product.id)}>
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
+  {products.map((product) => (
+    <tr key={product.id}>
+      <td className="px-6 py-4 whitespace-nowrap">
+        <div className="flex items-center">
+          <div className="h-10 w-10 relative flex-shrink-0">
+            <Image
+              src={product.image || "/placeholder.svg"}
+              alt={product.name}
+              fill
+              className="object-cover object-center rounded-md"
+            />
+          </div>
+          <div className="ml-4">
+            <div className="text-sm font-medium text-gray-900">{product.name}</div>
+          </div>
+        </div>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap">
+        <div className="text-sm text-gray-900">${product.price.toFixed(2)}</div>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap">
+        <div className="text-sm text-gray-900">
+          {categories.find(cat => cat.id === product.category_id)?.name || 'Uncategorized'}
+        </div>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap">
+        <div className="text-sm text-gray-900">
+          {new Date(product.created_at).toLocaleString()}
+        </div>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+        <button className="text-gray-600 hover:text-gray-900 mr-3" onClick={() => handleEdit(product)}>
+          <Edit className="h-4 w-4" />
+        </button>
+        <button className="text-gray-600 hover:text-red-600" onClick={() => handleDelete(product.id)}>
+          <Trash2 className="h-4 w-4" />
+        </button>
+      </td>
+    </tr>
+  ))}
+</tbody>
         </table>
       </div>
     </div>
