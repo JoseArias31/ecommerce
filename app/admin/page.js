@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabaseClient"
 import { uploadImage } from "@/lib/storage/cliente";
 import { useRef, useTransition } from "react";
 import { convertBlobUrlToFile } from "@/lib/utils";
+import { deleteImageFromBucket } from "@/lib/storage/deleteImageFromBucket";
 
 export default function AdminPage() {
   const [products, setProducts] = useState([])
@@ -90,6 +91,19 @@ export default function AdminPage() {
 
   const handleDelete = async (id) => {
     if (confirm("Are you sure you want to delete this product?")) {
+      // 1. Get all images for the product
+      const { data: images, error: imagesError } = await supabase
+        .from("productimages")
+        .select("id, url")
+        .eq("product_id", id);
+      if (images && Array.isArray(images)) {
+        for (const img of images) {
+          await deleteImageFromBucket(img.url, "images");
+          // Remove from productimages table
+          await supabase.from("productimages").delete().eq("id", img.id);
+        }
+      }
+      // 2. Delete the product itself
       const { error } = await supabase.from("products").delete().eq("id", id)
       if (error) console.error("Error deleting product:", error)
       else setProducts((prev) => prev.filter((p) => p.id !== id))

@@ -21,6 +21,8 @@ const countries = [
   // Add more countries as needed
 ].sort((a, b) => a.name.localeCompare(b.name))
 
+const COD_FEE = 5; // You can change to 10 if needed
+
 export default function CheckoutPage() {
   const [cart, setCart] = useState([])
   const [activeStep, setActiveStep] = useState("shipping")
@@ -42,6 +44,7 @@ export default function CheckoutPage() {
   const [isComplete, setIsComplete] = useState(false)
   const [activeTab, setActiveTab] = useState("credit")
   const [billingAddress, setBillingAddress] = useState("same")
+  const [paymentStatus, setPaymentStatus] = useState("pending"); // For COD orders
   const setQuantity = useQuantityStore((state) => state.setQuantity)
 
   // Load cart from localStorage on mount
@@ -73,7 +76,9 @@ export default function CheckoutPage() {
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0)
   const shipping = shippingMethod === "express" ? 20.0 : 10.0
   const taxes = subtotal * 0.08 // Example tax calculation (8%)
-  const total = subtotal + shipping + taxes
+  const isCOD = paymentMethod === "cod" || activeTab === "cod";
+  const codFee = isCOD ? COD_FEE : 0;
+  const total = subtotal + shipping + taxes + codFee
 
   const handleShippingSubmit = (e) => {
     e.preventDefault()
@@ -110,9 +115,11 @@ export default function CheckoutPage() {
           <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-6">
             <Check className="h-8 w-8 text-green-600" />
           </div>
-          <h2 className="text-2xl font-bold mb-4">Order Confirmed!</h2>
+          <h2 className="text-2xl font-bold mb-4">{isCOD ? "Order Pending (COD)" : "Order Confirmed!"}</h2>
           <p className="mb-6 text-gray-600">
-            Thank you for your purchase. We've sent a confirmation email to {shippingInfo.email}.
+            {isCOD
+              ? "Your order is pending. Please pay the delivery person in cash or e-transfer. Our staff will confirm your payment soon."
+              : `Thank you for your purchase. We've sent a confirmation email to ${shippingInfo.email}.`}
           </p>
           <p className="mb-8 text-gray-600">
             Order #:{" "}
@@ -338,7 +345,7 @@ export default function CheckoutPage() {
                 <div className="flex border-b">
                   <button
                     type="button"
-                    onClick={() => setActiveTab("credit")}
+                    onClick={() => { setActiveTab("credit"); setPaymentMethod("credit"); }}
                     className={`flex-1 py-2 px-4 text-center ${
                       activeTab === "credit"
                         ? "border-b-2 border-black font-medium"
@@ -349,7 +356,7 @@ export default function CheckoutPage() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setActiveTab("paypal")}
+                    onClick={() => { setActiveTab("paypal"); setPaymentMethod("paypal"); }}
                     className={`flex-1 py-2 px-4 text-center ${
                       activeTab === "paypal"
                         ? "border-b-2 border-black font-medium"
@@ -360,7 +367,7 @@ export default function CheckoutPage() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setActiveTab("apple")}
+                    onClick={() => { setActiveTab("apple"); setPaymentMethod("apple"); }}
                     className={`flex-1 py-2 px-4 text-center ${
                       activeTab === "apple"
                         ? "border-b-2 border-black font-medium"
@@ -368,6 +375,17 @@ export default function CheckoutPage() {
                     }`}
                   >
                     Apple Pay
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setActiveTab("cod"); setPaymentMethod("cod"); }}
+                    className={`flex-1 py-2 px-4 text-center ${
+                      activeTab === "cod"
+                        ? "border-b-2 border-black font-medium bg-yellow-100"
+                        : "text-gray-500 hover:text-gray-700"
+                    }`}
+                  >
+                    Cash on Delivery (COD)
                   </button>
                 </div>
                 <div className="pt-4">
@@ -461,6 +479,18 @@ export default function CheckoutPage() {
                       </button>
                     </div>
                   )}
+                  {activeTab === "cod" && (
+                    <div className="border border-yellow-400 bg-yellow-50 p-4 rounded-md text-yellow-900 mt-2">
+                      <h4 className="font-bold text-lg mb-2">Cash on Delivery (COD)</h4>
+                      <ul className="list-disc ml-6 mb-2">
+                        <li>You must pay <b>in cash</b> or <b>e-transfer</b> to the delivery person.</li>
+                        <li>Please have the <b>exact amount</b> ready.</li>
+                        <li>A COD handling fee of <b>${COD_FEE}</b> will be added to your order.</li>
+                        <li>Optionally, our courier may have a POS machine for card payments.</li>
+                      </ul>
+                      <div className="font-semibold">Your order will be marked as <span className="text-orange-600">Pending Order in Process</span> until payment is confirmed by our staff or the delivery person.</div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -552,7 +582,7 @@ export default function CheckoutPage() {
                   Processing...
                 </span>
               ) : (
-                `Pay ${total.toFixed(2)} USD`
+                isCOD ? `Place Order (COD) - $${total.toFixed(2)} USD` : `Pay $${total.toFixed(2)} USD`
               )}
             </button>
           </form>
@@ -639,6 +669,10 @@ export default function CheckoutPage() {
                   <div className="flex justify-between">
                     <span>Taxes</span>
                     <span>${taxes.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>COD Fee</span>
+                    <span>{codFee ? `$${codFee.toFixed(2)}` : "-"}</span>
                   </div>
                   <div className="border-t pt-2 mt-2 flex justify-between font-bold">
                     <span>Total</span>
