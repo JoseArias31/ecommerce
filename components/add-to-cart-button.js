@@ -36,7 +36,7 @@ export default function AddToCartButton({ product }) {
     <div className="w-full max-w-xs">
       <div className="flex items-center space-x-2">
         <button
-          className="w-8 h-8 flex items-center justify-center border rounded-md bg-gray-100 hover:bg-gray-200 text-lg font-bold transition"
+          className="w-7 h-7 flex items-center justify-center border rounded bg-gray-100 hover:bg-gray-200 text-base font-bold transition p-0"
           onClick={() => setQuantity(product.id, Math.max(1, quantity - 1))}
           aria-label="Decrease quantity"
         >
@@ -47,25 +47,25 @@ export default function AddToCartButton({ product }) {
           min={1}
           value={quantity}
           onChange={(e) => setQuantity(product.id, Math.max(1, Number(e.target.value)))}
-          className="w-12 text-center border rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400"
+          className="w-9 text-center border rounded px-1 py-0.5 focus:outline-none focus:ring-2 focus:ring-indigo-300 text-sm"
         />
         <button
-          className="w-8 h-8 flex items-center justify-center border rounded-md bg-gray-100 hover:bg-gray-200 text-lg font-bold transition"
+          className="w-7 h-7 flex items-center justify-center border rounded bg-gray-100 hover:bg-gray-200 text-base font-bold transition p-0"
           onClick={() => setQuantity(product.id, quantity + 1)}
           aria-label="Increase quantity"
         >
           +
         </button>
         <button
-          className="ml-2 px-4 py-2 bg-black hover:bg-gray-800 text-white rounded-md flex items-center gap-2 font-semibold text-base transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 active:scale-95 whitespace-nowrap"
+          className="ml-2 px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded flex items-center gap-1.5 font-semibold text-xs transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:ring-offset-2 active:scale-95 whitespace-nowrap shadow-sm"
           onClick={handleAddToCart}
         >
-          <ShoppingCart className="h-5 w-5" />
+          <ShoppingCart className="h-4 w-4" />
           Add to Cart
         </button>
       </div>
       {showCheckout && (
-        <Link href="/checkout" className="block mt-3 px-4 py-2 bg-black hover:bg-gray-800 text-white rounded-md text-center font-semibold text-base transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 active:scale-95">
+        <Link href="/checkout" className="block mt-2 px-2.5 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded text-center font-semibold text-xs transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-purple-300 focus:ring-offset-2 active:scale-95 shadow-sm">
           Go to Checkout
         </Link>
       )}

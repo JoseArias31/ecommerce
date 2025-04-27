@@ -149,11 +149,13 @@ export default function Home() {
               </div>
 
               <h1 className="text-4xl md:text-5xl font-bold mb-4 text-gray-900 leading-tight">
-                Discover <span className="text-[#2a4365]">Exceptional</span> Products
+                Discover <span className="text-[#2a4365]">Exceptional</span>{" "}
+                Products
               </h1>
 
               <p className="text-gray-600 mb-8 max-w-md mx-auto md:mx-0">
-                Curated selection of premium items designed to elevate your everyday experience
+                Curated selection of premium items designed to elevate your
+                everyday experience
               </p>
 
               <div className="flex flex-wrap gap-4 justify-center md:justify-start">
@@ -168,14 +170,15 @@ export default function Home() {
                 </Link>
 
                 <div className="relative">
-                <Link href="/checkout">
-                  <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
-                    {cartCount}
-                  </div>
-                   <button className="px-6 py-3 border border-gray-200 text-gray-700 rounded-full font-medium hover:bg-gray-50 transition-colors duration-300 flex items-center gap-2">
-                     <ShoppingBag className="w-4 h-4" />
-                    Cart
-                  </button></Link>
+                  <Link href="/checkout">
+                    <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                      {cartCount}
+                    </div>
+                    <button className="px-6 py-3 border border-gray-200 text-gray-700 rounded-full font-medium hover:bg-gray-50 transition-colors duration-300 flex items-center gap-2">
+                      <ShoppingBag className="w-4 h-4" />
+                      Cart
+                    </button>
+                  </Link>
                 </div>
               </div>
             </div>
@@ -186,7 +189,12 @@ export default function Home() {
                 <div className="w-full h-64 md:h-96 relative overflow-hidden rounded-2xl shadow-lg">
                   <Image
                     key={featuredProducts[randomHeroIndex]?.id}
-                    src={featuredProducts[randomHeroIndex]?.image && featuredProducts[randomHeroIndex]?.image !== "" ? featuredProducts[randomHeroIndex]?.image : "/placeholder.svg"}
+                    src={
+                      featuredProducts[randomHeroIndex]?.image &&
+                      featuredProducts[randomHeroIndex]?.image !== ""
+                        ? featuredProducts[randomHeroIndex]?.image
+                        : "/placeholder.svg"
+                    }
                     alt={featuredProducts[randomHeroIndex]?.name || ""}
                     fill
                     className="object-cover object-center transition-transform duration-700"
@@ -195,9 +203,18 @@ export default function Home() {
                     20% OFF
                   </div>
                   <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-4 text-white">
-                    <h3 className="text-xl font-bold">{featuredProducts[randomHeroIndex]?.name}</h3>
-                    <p className="text-sm">${featuredProducts[randomHeroIndex]?.price ?? '0.00'}</p>
-                    <Link href={`/products/${featuredProducts[randomHeroIndex]?.id || ''}`} className="underline text-sm">
+                    <h3 className="text-xl font-bold">
+                      {featuredProducts[randomHeroIndex]?.name}
+                    </h3>
+                    <p className="text-sm">
+                      ${featuredProducts[randomHeroIndex]?.price ?? "0.00"}
+                    </p>
+                    <Link
+                      href={`/products/${
+                        featuredProducts[randomHeroIndex]?.id || ""
+                      }`}
+                      className="underline text-sm"
+                    >
                       View Details
                     </Link>
                   </div>
@@ -207,25 +224,38 @@ export default function Home() {
           </div>
         </div>
       </section>
+      <div className="flex flex-col md:flex-row items-center  gap-4">
+         {/* Category Pills */}
+         <section id="categories" className="container mx-auto px-6 py-8">
+          <div className="flex overflow-x-auto pb-2 gap-2 w-full no-scrollbar">
+            {categories.map((category) => (
+              <button
+                key={category}
+                onClick={() => setActiveCategory(category)}
+                className={`px-5 py-3 rounded-full whitespace-nowrap transition-all duration-300 ${
+                  activeCategory === category
+                    ? "bg-[#2a4365] text-white shadow-md"
+                    : "bg-gray-50 text-gray-700 hover:bg-gray-100"
+                }`}
+              >
+                {category.charAt(0).toUpperCase() + category.slice(1)}
+              </button>
+            ))}
+          </div>
+        </section>
+        {/* Search Bar */}
+        <section className="container mx-auto px-6 pt-8 pb-2">
+          <input
+            type="text"
+            className="w-full md:w-1/2 px-4 py-2 rounded-full border border-gray-200 focus:ring-2 focus:ring-indigo-100 outline-none text-gray-700 bg-white shadow-sm text-base"
+            placeholder="Search products..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </section>
 
-      {/* Category Pills */}
-      <section id="categories" className="container mx-auto px-6 py-8">
-        <div className="flex overflow-x-auto pb-2 gap-2 w-full no-scrollbar">
-          {categories.map((category) => (
-            <button
-              key={category}
-              onClick={() => setActiveCategory(category)}
-              className={`px-5 py-3 rounded-full whitespace-nowrap transition-all duration-300 ${
-                activeCategory === category
-                  ? "bg-[#2a4365] text-white shadow-md"
-                  : "bg-gray-50 text-gray-700 hover:bg-gray-100"
-              }`}
-            >
-              {category.charAt(0).toUpperCase() + category.slice(1)}
-            </button>
-          ))}
-        </div>
-      </section>
+       
+      </div>
 
       {/* Our Products */}
       <section id="featured" className="bg-gray-50 py-16">
@@ -250,46 +280,77 @@ export default function Home() {
             {featuredProducts.map((product) => (
               <div
                 key={product.id}
-                className="group flex flex-col bg-white rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-xl h-full"
+                className="group relative flex flex-col bg-white/80 backdrop-blur-md rounded-3xl overflow-hidden shadow-lg border border-gray-100 hover:shadow-2xl hover:-translate-y-1 hover:border-indigo-200 transition-all duration-300 h-full"
               >
+                {/* BADGE: Example for new products */}
+                {product.isNew && (
+                  <span className="absolute top-4 left-4 bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg z-20 animate-pulse">
+                    New
+                  </span>
+                )}
                 <div className="relative">
-                  <Link href={`/products/${product.id}`} className="block overflow-hidden">
+                  <Link
+                    href={`/products/${product.id}`}
+                    className="block overflow-hidden rounded-2xl"
+                  >
                     <Image
-                      src={product.image && product.image !== "" ? product.image : "/placeholder.svg"}
+                      src={
+                        product.image && product.image !== ""
+                          ? product.image
+                          : "/placeholder.svg"
+                      }
                       alt={product.name}
                       width={400}
                       height={400}
-                      className="object-cover object-center w-full h-72 transition-transform duration-700 group-hover:scale-105"
+                      className="object-cover object-center w-full h-72 transition-transform duration-700 group-hover:scale-110 group-hover:rotate-1"
                     />
                   </Link>
-                  <div className="absolute top-4 right-4 flex flex-col gap-2">
-                    <button className="p-2 bg-white rounded-full shadow-md hover:bg-gray-50 transition-colors duration-300">
-                      <Heart className="h-5 w-5 text-gray-600" />
+                  <div className="absolute top-4 right-4 flex flex-col gap-2 z-10">
+                    <button className="p-2 bg-white/80 rounded-full shadow-md hover:bg-indigo-50 transition-colors duration-300 group active:scale-90">
+                      <Heart className="h-5 w-5 text-pink-500 group-hover:fill-pink-100 transition-all" />
                     </button>
                   </div>
-                  <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                 
+                  <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none rounded-b-2xl"></div>
                 </div>
-
-                <div className="flex-1 flex flex-col p-6">
-                
-
+                <div className="flex-1 flex flex-col p-6 gap-2">
                   <Link href={`/products/${product.id}`}>
-                    <h3 className="text-xl font-semibold mb-2 group-hover:text-[#2a4365] transition-colors duration-300">
+                    <h3 className="text-2xl font-bold mb-1 group-hover:text-indigo-700 transition-colors duration-300 truncate">
                       {product.name}
                     </h3>
                   </Link>
-
-                  <p className="text-gray-500 text-sm mb-6 line-clamp-2">{product.description}</p>
-
-                  <div className="mt-auto flex flex-col gap-4">
+                  {/* Example star rating - replace with actual rating if available */}
+                  <div className="flex items-center gap-1 mb-1">
+                    {[...Array(5)].map((_, i) => (
+                      <Star
+                        key={i}
+                        className={`h-4 w-4 ${
+                          i < (product.rating || 4)
+                            ? "text-yellow-400"
+                            : "text-gray-200"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <p className="text-gray-500 text-sm mb-4 line-clamp-2">
+                    {product.description}
+                  </p>
+                  <div className="mt-auto flex flex-col gap-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-2xl font-bold text-gray-900">${product.price}</span>
-                      <span className="text-sm text-green-600 font-medium">In Stock</span>
+                      <span className="text-2xl font-extrabold text-gray-900 drop-shadow-sm">
+                        ${product.price}
+                      </span>
+                      <span className="text-xs px-2 py-1 rounded-full bg-green-50 text-green-700 font-semibold border border-green-100">
+                        In Stock
+                      </span>
                     </div>
                     <AddToCartButton
                       product={product}
-                      quantity={Number.isFinite(getQuantity(product.id)) ? getQuantity(product.id) : 1}
+                      quantity={
+                        Number.isFinite(getQuantity(product.id))
+                          ? getQuantity(product.id)
+                          : 1
+                      }
+                      className="w-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-bold py-3 rounded-xl shadow-md hover:from-indigo-600 hover:to-purple-600 hover:scale-105 active:scale-95 transition-all duration-200"
                     />
                   </div>
                 </div>
@@ -308,8 +369,8 @@ export default function Home() {
             </div>
             <h3 className="font-bold text-xl mb-3">Premium Quality</h3>
             <p className="text-gray-600 leading-relaxed">
-              All our products are made with the highest quality materials and craftsmanship to ensure lasting
-              satisfaction.
+              All our products are made with the highest quality materials and
+              craftsmanship to ensure lasting satisfaction.
             </p>
           </div>
           <div className="group flex flex-col items-center text-center p-8 rounded-2xl bg-white border border-gray-100 hover:border-gray-200 hover:shadow-lg transition-all duration-300">
@@ -318,7 +379,8 @@ export default function Home() {
             </div>
             <h3 className="font-bold text-xl mb-3">Free Shipping</h3>
             <p className="text-gray-600 leading-relaxed">
-              Enjoy free shipping on all orders over $100 within the continental US with fast and reliable delivery.
+              Enjoy free shipping on all orders over $100 within the continental
+              US with fast and reliable delivery.
             </p>
           </div>
           <div className="group flex flex-col items-center text-center p-8 rounded-2xl bg-white border border-gray-100 hover:border-gray-200 hover:shadow-lg transition-all duration-300">
@@ -327,7 +389,8 @@ export default function Home() {
             </div>
             <h3 className="font-bold text-xl mb-3">30-Day Returns</h3>
             <p className="text-gray-600 leading-relaxed">
-              Not satisfied? Return any item within 30 days for a full refund, no questions asked.
+              Not satisfied? Return any item within 30 days for a full refund,
+              no questions asked.
             </p>
           </div>
         </div>
@@ -373,7 +436,9 @@ export default function Home() {
                     <Star key={i} className="h-5 w-5 fill-current" />
                   ))}
                 </div>
-                <p className="text-gray-600 mb-8 leading-relaxed flex-grow">"{testimonial.text}"</p>
+                <p className="text-gray-600 mb-8 leading-relaxed flex-grow">
+                  "{testimonial.text}"
+                </p>
                 <div className="flex items-center mt-auto">
                   <div className="w-14 h-14 bg-gray-200 rounded-full mr-4 overflow-hidden">
                     <Image
@@ -385,7 +450,9 @@ export default function Home() {
                     />
                   </div>
                   <div>
-                    <p className="font-medium text-gray-900">{testimonial.name}</p>
+                    <p className="font-medium text-gray-900">
+                      {testimonial.name}
+                    </p>
                     <p className="text-sm text-[#2a4365]">{testimonial.role}</p>
                   </div>
                 </div>
@@ -400,9 +467,12 @@ export default function Home() {
         <div className="bg-[#2a4365] text-white rounded-3xl p-10 md:p-16 overflow-hidden relative">
           <div className="absolute inset-0 bg-[url('/placeholder.svg?height=600&width=1200')] bg-cover bg-center opacity-10 mix-blend-overlay"></div>
           <div className="max-w-2xl mx-auto text-center relative z-10">
-            <h2 className="text-3xl md:text-4xl font-bold mb-6">Join Our Newsletter</h2>
+            <h2 className="text-3xl md:text-4xl font-bold mb-6">
+              Join Our Newsletter
+            </h2>
             <p className="text-blue-100 mb-8 text-lg">
-              Subscribe to get special offers, free giveaways, and once-in-a-lifetime deals delivered to your inbox.
+              Subscribe to get special offers, free giveaways, and
+              once-in-a-lifetime deals delivered to your inbox.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
               <input
@@ -421,5 +491,5 @@ export default function Home() {
         </div>
       </section>
     </main>
-  )
+  );
 }
