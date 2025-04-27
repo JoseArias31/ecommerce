@@ -104,18 +104,17 @@ export default function Home() {
   // New arrivals (last 4 products for demo)
   const newArrivals = [...allProducts].reverse().slice(0, 4)
 
-  // Random hero carousel index (random mode)
-  const [randomHeroIndex, setRandomHeroIndex] = useState(
-    () => Math.floor(Math.random() * featuredProducts.length)
-  )
+  // Always loop hero images from all products, not filtered
+  const [randomHeroIndex, setRandomHeroIndex] = useState(() => Math.floor(Math.random() * allProducts.length));
   useEffect(() => {
+    if (!allProducts.length) return;
     const interval = setInterval(() => {
-      setRandomHeroIndex(
-        Math.floor(Math.random() * featuredProducts.length)
-      )
-    }, 4000)
-    return () => clearInterval(interval)
-  }, [featuredProducts.length])
+      setRandomHeroIndex(Math.floor(Math.random() * allProducts.length));
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [allProducts.length]);
+
+  const heroProduct = allProducts.length ? allProducts[randomHeroIndex] : null;
 
   if (!isMounted) {
     return null
@@ -188,14 +187,9 @@ export default function Home() {
               <div className="flex items-center justify-center">
                 <div className="w-full h-64 md:h-96 relative overflow-hidden rounded-2xl shadow-lg">
                   <Image
-                    key={featuredProducts[randomHeroIndex]?.id}
-                    src={
-                      featuredProducts[randomHeroIndex]?.image &&
-                      featuredProducts[randomHeroIndex]?.image !== ""
-                        ? featuredProducts[randomHeroIndex]?.image
-                        : "/placeholder.svg"
-                    }
-                    alt={featuredProducts[randomHeroIndex]?.name || ""}
+                    key={heroProduct?.id || 'fallback'}
+                    src={heroProduct?.image && heroProduct?.image !== '' ? heroProduct.image : '/placeholder.svg'}
+                    alt={heroProduct?.name || ''}
                     fill
                     className="object-cover object-center transition-transform duration-700"
                   />
@@ -203,18 +197,9 @@ export default function Home() {
                     20% OFF
                   </div>
                   <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-4 text-white">
-                    <h3 className="text-xl font-bold">
-                      {featuredProducts[randomHeroIndex]?.name}
-                    </h3>
-                    <p className="text-sm">
-                      ${featuredProducts[randomHeroIndex]?.price ?? "0.00"}
-                    </p>
-                    <Link
-                      href={`/products/${
-                        featuredProducts[randomHeroIndex]?.id || ""
-                      }`}
-                      className="underline text-sm"
-                    >
+                    <h3 className="text-xl font-bold">{heroProduct?.name}</h3>
+                    <p className="text-sm">${heroProduct?.price ?? '0.00'}</p>
+                    <Link href={`/products/${heroProduct?.id || ''}`} className="underline text-sm">
                       View Details
                     </Link>
                   </div>
