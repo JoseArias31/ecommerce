@@ -23,7 +23,7 @@ export function AuthForm({ className, ...props }: React.ComponentProps<"div">) {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+  const [resetSuccess, setResetSuccess] = useState(false);
 
   const router = useRouter();
 
@@ -93,15 +93,27 @@ export function AuthForm({ className, ...props }: React.ComponentProps<"div">) {
       setIsSubmitting(false);
     } else {
       setSuccess(true);
-      router.push('/dashboard');
+      router.push('/products');
       
     }
  
   };
 
-
-
-
+  const handleReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setResetSuccess(false);
+    setIsSubmitting(true);
+    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/login`,
+    });
+    if (error) {
+      setError(error.message);
+    } else {
+      setResetSuccess(true);
+    }
+    setIsSubmitting(false);
+  };
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
@@ -121,8 +133,29 @@ export function AuthForm({ className, ...props }: React.ComponentProps<"div">) {
                 onForgotPasswordClick={() => setFormType("forgot-password")}
               />
             )}
-            {formType === "signup" && <SignUpForm onLoginClick={() => setFormType("login")} />}
-            {formType === "forgot-password" && <ForgotPasswordForm onBackToLoginClick={() => setFormType("login")} />}
+            {formType === "signup" && (
+              <SignUpForm
+                email={email}
+                setEmail={setEmail}
+                password={password}
+                setPassword={setPassword}
+                handleSubmit={handleSubmit}
+                loading={isSubmitting}
+                error={error}
+                onLoginClick={() => setFormType("login")}
+              />
+            )}
+            {formType === "forgot-password" && (
+              <ForgotPasswordForm
+                email={email}
+                setEmail={setEmail}
+                handleReset={handleReset}
+                loading={isSubmitting}
+                error={error}
+                success={resetSuccess}
+                onBackToLoginClick={() => setFormType("login")}
+              />
+            )}
           </div>
           <div className="p-6 md:p-8 relative overflow-hidden hidden md:block">
             <div className="absolute inset-0 bg-moving-gradient"></div>
@@ -237,40 +270,55 @@ function LoginForm({
   )
 }
 
-function SignUpForm({ onLoginClick }: { onLoginClick: () => void }) {
+function SignUpForm({
+  email,
+  setEmail,
+  password,
+  setPassword,
+  handleSubmit,
+  loading,
+  error,
+  onLoginClick,
+}: {
+  email: string
+  setEmail: React.Dispatch<React.SetStateAction<string>>
+  password: string
+  setPassword: React.Dispatch<React.SetStateAction<string>>
+  handleSubmit: (e: React.FormEvent) => Promise<void>
+  loading: boolean
+  error: string | null
+  onLoginClick: () => void
+}) {
   return (
-    <form className="flex flex-col gap-6">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-6">
       <div className="flex flex-col items-center text-center">
         <h1 className="text-2xl font-bold">Create an account</h1>
         <p className="text-balance text-muted-foreground">Sign up to get started with Acme Inc</p>
       </div>
       <div className="grid gap-2">
-        <Label htmlFor="name">Full Name</Label>
-        <Input id="name" type="text" placeholder="John Doe" required />
-      </div>
-      <div className="grid gap-2">
         <Label htmlFor="signup-email">Email</Label>
-        <Input id="signup-email" type="email" placeholder="m@example.com" required />
+        <Input
+          id="signup-email"
+          type="email"
+          placeholder="m@example.com"
+          required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
       </div>
       <div className="grid gap-2">
         <Label htmlFor="signup-password">Password</Label>
-        <Input id="signup-password" type="password" required />
+        <Input
+          id="signup-password"
+          type="password"
+          required
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
       </div>
-      <div className="grid gap-2">
-        <Label htmlFor="confirm-password">Confirm Password</Label>
-        <Input id="confirm-password" type="password" required />
-      </div>
-      <div className="flex items-center space-x-2">
-        <Checkbox id="terms" />
-        <label
-          htmlFor="terms"
-          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-        >
-          I agree to the terms and conditions
-        </label>
-      </div>
-      <Button type="submit" className="w-full">
-        Create Account
+      {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+      <Button type="submit" className="w-full" disabled={loading}>
+        {loading ? 'Creating account...' : 'Create Account'}
       </Button>
       <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-border">
         <span className="relative z-10 bg-background px-2 text-muted-foreground">Or continue with</span>
@@ -314,9 +362,25 @@ function SignUpForm({ onLoginClick }: { onLoginClick: () => void }) {
   )
 }
 
-function ForgotPasswordForm({ onBackToLoginClick }: { onBackToLoginClick: () => void }) {
+function ForgotPasswordForm({
+  email,
+  setEmail,
+  handleReset,
+  loading,
+  error,
+  success,
+  onBackToLoginClick,
+}: {
+  email: string;
+  setEmail: React.Dispatch<React.SetStateAction<string>>;
+  handleReset: (e: React.FormEvent) => Promise<void>;
+  loading: boolean;
+  error: string | null;
+  success: boolean;
+  onBackToLoginClick: () => void;
+}) {
   return (
-    <form className="flex flex-col gap-6">
+    <form onSubmit={handleReset} className="flex flex-col gap-6">
       <button
         type="button"
         onClick={onBackToLoginClick}
@@ -333,17 +397,30 @@ function ForgotPasswordForm({ onBackToLoginClick }: { onBackToLoginClick: () => 
       </div>
       <div className="grid gap-2">
         <Label htmlFor="reset-email">Email</Label>
-        <Input id="reset-email" type="email" placeholder="m@example.com" required />
+        <Input
+          id="reset-email"
+          type="email"
+          placeholder="m@example.com"
+          required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
       </div>
-      <Button type="submit" className="w-full">
-        Send Reset Link
+      <Button type="submit" className="w-full" disabled={loading}>
+        {loading ? 'Sending reset link...' : 'Send Reset Link'}
       </Button>
+      {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+      {success && <p className="text-green-500 text-sm mt-2">Check your email for the reset link.</p>}
       <div className="text-center text-sm">
-        Remember your password?{" "}
-        <button type="button" onClick={onBackToLoginClick} className="underline underline-offset-4 hover:text-primary">
+        Remember your password?{' '}
+        <button
+          type="button"
+          onClick={onBackToLoginClick}
+          className="underline underline-offset-4 hover:text-primary"
+        >
           Back to login
         </button>
       </div>
     </form>
-  )
+  );
 }

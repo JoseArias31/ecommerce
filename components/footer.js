@@ -5,13 +5,13 @@ export default function Footer() {
         <div className="flex flex-col md:flex-row justify-between items-center">
           <p className="text-sm text-gray-600">© {new Date().getFullYear()} The Quick Shop. All rights reserved. Develop by <a href="https://jose-arias-portfolio.vercel.app/"><span className="underline">Jose Arias</span></a></p>
           <div className="flex space-x-4 mt-4 md:mt-0">
-            <a href="#" className="text-sm text-gray-600 hover:text-black">
+            <a href="/terms" className="text-sm text-gray-600 hover:text-black">
               Terms
             </a>
-            <a href="#" className="text-sm text-gray-600 hover:text-black">
+            <a href="/privacy" className="text-sm text-gray-600 hover:text-black">
               Privacy
             </a>
-            <a href="#" className="text-sm text-gray-600 hover:text-black">
+            <a href="/contact" className="text-sm text-gray-600 hover:text-black">
               Contact
             </a>
           </div>
