@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -24,6 +24,8 @@ export function AuthForm({ className, ...props }: React.ComponentProps<"div">) {
   const [success, setSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [resetSuccess, setResetSuccess] = useState(false);
+  const [resetToken, setResetToken] = useState<string | null>(null);
+  const [newPassword, setNewPassword] = useState("");
 
   const router = useRouter();
 
@@ -99,20 +101,51 @@ export function AuthForm({ className, ...props }: React.ComponentProps<"div">) {
  
   };
 
+  // Get the token from URL query parameter
+  const token = new URLSearchParams(window.location.search).get('token');
+
+  useEffect(() => {
+    if (token && token !== 'reset-password') {
+      setResetToken(token);
+    }
+  }, [token]);
+
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setResetSuccess(false);
     setIsSubmitting(true);
-    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/login`,
+    
+    try {
+      const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth/reset-password`,
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      setSuccess(true);
+      setResetSuccess(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred while sending the reset email');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handlePasswordReset = async () => {
+    if (!resetToken) return;
+
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword,
     });
+
     if (error) {
       setError(error.message);
     } else {
-      setResetSuccess(true);
+      setSuccess(true);
+      router.push('/login');
     }
-    setIsSubmitting(false);
   };
 
   return (
@@ -150,11 +183,34 @@ export function AuthForm({ className, ...props }: React.ComponentProps<"div">) {
                 email={email}
                 setEmail={setEmail}
                 handleReset={handleReset}
-                loading={isSubmitting}
+                loading={loading}
                 error={error}
-                success={resetSuccess}
+                success={success}
                 onBackToLoginClick={() => setFormType("login")}
               />
+            )}
+            {resetToken && (
+              <Card>
+                <CardContent className="p-6">
+                  <h2 className="text-2xl font-bold mb-4">Reset Password</h2>
+                  <form onSubmit={handlePasswordReset} className="space-y-4">
+                    <div>
+                      <Label htmlFor="newPassword">New Password</Label>
+                      <Input
+                        id="newPassword"
+                        type="password"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <Button type="submit" disabled={loading}>
+                      {loading ? 'Resetting...' : 'Reset Password'}
+                    </Button>
+                    {error && <p className="text-red-500 text-sm">{error}</p>}
+                  </form>
+                </CardContent>
+              </Card>
             )}
           </div>
           <div className="p-6 md:p-8 relative overflow-hidden hidden md:block">
@@ -166,7 +222,7 @@ export function AuthForm({ className, ...props }: React.ComponentProps<"div">) {
         </CardContent>
       </Card>
       <div className="text-balance text-center text-xs text-muted-foreground [&_a]:underline [&_a]:underline-offset-4 hover:[&_a]:text-primary">
-        By clicking continue, you agree to our <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>.
+        By clicking continue, you agree to our <a href="/terms">Terms of Service</a> and <a href="/privacy">Privacy Policy</a>.
       </div>
     </div>
   )
