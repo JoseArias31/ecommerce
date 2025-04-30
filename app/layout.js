@@ -7,10 +7,38 @@ import Footer from "@/components/footer";
 import { Globe } from "lucide-react"
 import React from 'react'
 import { FloatingWhatsApp } from 'react-floating-whatsapp'
-
+import useProtectedRoute from "@/app/auth/register/Hooks/useProtectedRoutes";
+import { supabase } from '@/lib/supabaseClient';
+import { useRouter } from 'next/navigation';
 
 export default function RootLayout({ children }) {
   const [cartCount, setCartCount] = useState(0);
+  const [user, setUser] = useState(null);
+  const [error, setError] = useState(null);
+  const session = useProtectedRoute(); // Custom hook to check session
+  const router = useRouter();
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        if (!session) return; // If no session, do nothing
+
+        const { data: userData, error: userError } = await supabase
+          .from("users")
+          .select("*")
+          .eq("email", session.user.email)
+          .single();
+
+        if (userError) throw userError;
+        setUser(userData);
+      } catch (error) {
+        console.error("Error fetching user data:", error.message);
+        setError(error);
+      }
+    };
+
+    fetchUserData();
+  }, [session]); // Runs when session changes
 
   useEffect(() => {
     // Function to sum all quantities in the cart
@@ -30,6 +58,21 @@ export default function RootLayout({ children }) {
     return () => window.removeEventListener('cartUpdated', handleCartUpdate);
   }, []);
 
+  const handleSignOut = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      setUser(null);
+      router.push('/');
+    } catch (error) {
+      console.error('Error signing out:', error.message);
+    }
+  };
+
+  if(error) {
+    <div>Error while getting access</div>
+  }
+
   return (
     <html lang="en">
       <head>
@@ -37,45 +80,83 @@ export default function RootLayout({ children }) {
         <meta name="description" content="A minimalist e-commerce store" />
       </head>
       <body>
-       
-          <FloatingWhatsApp
-            phoneNumber="16474252986"
-            accountName="The Quick Shop"
-            statusMessage="Typically replies within 2 minutes"
-            
-          />
-          <div className="flex flex-col min-h-screen">
-            <nav className="border-b sticky top-0 z-50 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/60 transition-shadow">
-              <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-                <Link href="/">
-                  <h1 className="text-4xl font-bold text-black">
-                    The Quick Shop
-                  </h1>
-                </Link>
+        <FloatingWhatsApp
+          phoneNumber="16474252986"
+          accountName="The Quick Shop"
+          statusMessage="Typically replies within 2 minutes"
+        />
+        <div className="flex flex-col min-h-screen">
+          <nav className="border-b sticky top-0 z-50 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/60 transition-shadow">
+            <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+              <Link href="/">
+                <h1 className="text-4xl font-bold text-black">
+                  The Quick Shop
+                </h1>
+              </Link>
 
-                <div className="flex items-center space-x-4">
-                  <Link href="/checkout" className="text-black">
-                    <div className="p-2 relative">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="20"
-                        height="20"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
+              <div className="flex items-center space-x-4">
+                <Link href="/checkout" className="text-black">
+                  <div className="p-2 relative">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <circle cx="8" cy="21" r="1"></circle>
+                      <circle cx="19" cy="21" r="1"></circle>
+                      <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"></path>
+                    </svg>
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-black text-xs w-5 h-5 rounded-full flex items-center justify-center ">
+                      {cartCount}
+                    </span>
+                  </div>
+                </Link>
+                
+                {session ? (
+                  user ? (
+                    // Show user profile dropdown when both session and user exist
+                    <div className="flex items-center gap-2">
+                      <button 
+                        onClick={handleSignOut}
+                        className="text-black p-2 flex items-center gap-1"
                       >
-                        <circle cx="8" cy="21" r="1"></circle>
-                        <circle cx="19" cy="21" r="1"></circle>
-                        <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"></path>
-                      </svg>
-                      <span className="absolute -top-1 -right-1 bg-red-500 text-black text-xs w-5 h-5 rounded-full flex items-center justify-center ">
-                        {cartCount}
-                      </span>
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="20"
+                          height="20"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                          <polyline points="16 17 21 12 16 7"></polyline>
+                          <line x1="21" y1="12" x2="9" y2="12"></line>
+                        </svg>
+                        <span className="text-sm">Sign Out</span>
+                      </button>
+                      <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
+                        {user?.username?.charAt(0).toUpperCase() || 
+                         user?.email?.charAt(0).toUpperCase() || 
+                         'U'}
+                      </div>
                     </div>
-                  </Link>
+                  ) : (
+                    // Show loading state when session exists but user data is loading
+                    <div className="p-2">
+                      <div className="w-5 h-5 border-2 border-gray-400 border-t-black rounded-full animate-spin"></div>
+                    </div>
+                  )
+                ) : (
+                  // Show login button when no session exists
                   <Link href="/login" className="text-black">
                     <div className="relative p-2">
                       <svg
@@ -99,20 +180,14 @@ export default function RootLayout({ children }) {
                       </div>
                     </div>
                   </Link>
-                </div>
+                )}
               </div>
-            </nav>
-            {children}
-            <Footer />
-          </div>
-       
+            </div>
+          </nav>
+          {children}
+          <Footer />
+        </div>
       </body>
     </html>
   );
 }
-
-import './globals.css'
-
-// export const metadata = {
-//   generator: 'v0.dev'
-// };

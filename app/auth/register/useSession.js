@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
-import { supabase } from "../../lib/supabaseClient";
+import { supabase } from "../../../lib/supabaseClient"; // Adjust the import path as necessary
+// This hook manages the session state and listens for authentication state changes
 
 const useSession = () => {
   const [session, setSession] = useState(null);
