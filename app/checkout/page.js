@@ -5,6 +5,8 @@ import Link from "next/link"
 import Image from "next/image"
 import { ArrowLeft, CreditCard, Check, MapPin, Package, ShoppingBag, Trash2 } from "lucide-react"
 import { useQuantityStore } from "../../store/quantityStore";
+import { supabase } from "@/lib/supabaseClient";
+import { useRouter } from "next/navigation";
 
 // Country list for international shipping
 const countries = [
@@ -85,18 +87,115 @@ export default function CheckoutPage() {
     setActiveStep("payment")
   }
 
-  const handlePaymentSubmit = (e) => {
+  const handlePaymentSubmit = async (e) => {
     e.preventDefault()
     setIsProcessing(true)
 
-    // Simulate payment processing
-    setTimeout(() => {
+    try {
+      // Get current user
+      const { data: { user }, error: authError } = await supabase.auth.getUser()
+      if (authError) {
+        throw new Error(`Authentication error: ${authError.message}`)
+      }
+      if (!user) {
+        throw new Error("User not authenticated")
+      }
+
+      // Create order
+      const { data: order, error: orderError } = await supabase
+        .from("orders")
+        .insert([{
+          user_id: user.id,
+          amount: total,
+          shipping_method: shippingMethod,
+          status: isCOD ? "pending" : "completed",
+          created_at: new Date().toISOString(),
+          shipping_info: shippingInfo
+        }])
+        .select()
+        .single()
+
+      if (orderError) {
+        console.error("Order creation error:", orderError)
+        throw new Error(`Order creation failed: ${orderError.message}`)
+      }
+
+      // Create order items
+      const orderItems = cart.map(item => ({
+        order_id: order.id,
+        product_id: item.id,
+        quantity: item.quantity,
+        price: item.price,
+        name: item.name,
+        image: item.image
+      }))
+
+      const { error: orderItemsError } = await supabase
+        .from("order_items")
+        .insert(orderItems)
+
+      if (orderItemsError) {
+        console.error("Order items creation error:", orderItemsError)
+        throw new Error(`Order items creation failed: ${orderItemsError.message}`)
+      }
+
+      // Create payment record
+      const { error: paymentError } = await supabase
+        .from("payments")
+        .insert([{
+          order_id: order.id,
+          user_id: user.id,
+          amount: total,
+          method: paymentMethod,
+          status: isCOD ? "pending" : "completed",
+          created_at: new Date().toISOString()
+        }])
+
+      if (paymentError) {
+        console.error("Payment creation error:", paymentError)
+        throw new Error(`Payment creation failed: ${paymentError.message}`)
+      }
+
+      // Create shipping address
+      const { error: shippingError } = await supabase
+        .from("shipping_addresses")
+        .insert([
+          {
+            order_id: order.id,
+            user_id: user.id,
+            address: shippingInfo.address,
+            apartment: shippingInfo.apartment,
+            city: shippingInfo.city,
+            state: shippingInfo.state,
+            zip_code: shippingInfo.zipCode,
+            country: shippingInfo.country,
+            first_name: shippingInfo.firstName,
+            last_name: shippingInfo.lastName,
+            email: shippingInfo.email,
+            created_at: new Date().toISOString(),
+          },
+        ]);
+
+      if (shippingError) {
+        console.error("Shipping address creation error:", shippingError)
+        throw new Error(`Shipping address creation failed: ${shippingError.message}`)
+      }
+
+      // Clear cart after successful order
+      syncCart([])
       setIsProcessing(false)
       setIsComplete(true)
       setActiveStep("confirmation")
-      // Clear cart after successful order
-      syncCart([])
-    }, 2000)
+
+    } catch (error) {
+      console.error("Error processing order:", {
+        message: error.message,
+        name: error.name,
+        stack: error.stack
+      })
+      alert(`Error processing your order: ${error.message}. Please try again.`)
+      setIsProcessing(false)
+    }
   }
 
   const handleInputChange = (e) => {

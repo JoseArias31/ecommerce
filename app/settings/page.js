@@ -244,7 +244,7 @@ export default function UserDashboard() {
                               <p className="text-sm text-gray-500">{formatDate(order.created_at)}</p>
                             </div>
                             <div className="text-right">
-                              <p className="font-medium">{formatCurrency(order.total_amount)}</p>
+                              <p className="font-medium">{formatCurrency(order.amount)}</p>
                               <p className="text-sm capitalize px-2 py-1 rounded-full bg-gray-200 inline-block">
                                 {order.status}
                               </p>
@@ -277,7 +277,7 @@ export default function UserDashboard() {
                         <div key={payment.id} className="bg-gray-50 p-4 rounded-lg">
                           <div className="flex justify-between items-center">
                             <div>
-                              <p className="font-medium capitalize">{payment.payment_method}</p>
+                              <p className="font-medium capitalize">{payment.method}</p>
                               <p className="text-sm text-gray-500">{formatDate(payment.created_at)}</p>
                             </div>
                             <div className="text-right">
@@ -327,7 +327,7 @@ export default function UserDashboard() {
                             </div>
                             <div className="flex items-center">
                               <div className="text-right mr-4">
-                                <p className="font-medium">{formatCurrency(order.total_amount)}</p>
+                                <p className="font-medium">{formatCurrency(order.amount)}</p>
                                 <p
                                   className={`text-sm capitalize px-2 py-1 rounded-full inline-block
                                   ${
@@ -400,7 +400,7 @@ export default function UserDashboard() {
                                           Total
                                         </td>
                                         <td className="px-4 py-3 text-right text-sm font-medium">
-                                          {formatCurrency(order.total_amount)}
+                                          {formatCurrency(order.amount)}
                                         </td>
                                       </tr>
                                     </tfoot>
@@ -416,7 +416,7 @@ export default function UserDashboard() {
                                     <div className="grid md:grid-cols-3 gap-4">
                                       <div>
                                         <p className="text-sm text-gray-500">Method</p>
-                                        <p className="font-medium capitalize">{payment.payment_method}</p>
+                                        <p className="font-medium capitalize">{payment.method}</p>
                                       </div>
                                       <div>
                                         <p className="text-sm text-gray-500">Amount</p>
@@ -455,13 +455,13 @@ export default function UserDashboard() {
                                           {address.apartment && `, ${address.apartment}`}
                                         </p>
                                         <p className="font-medium">
-                                          {address.city}, {address.state} {address.zip}
+                                          {address.city}, {address.state} {address.zip_code}
                                         </p>
                                         <p className="font-medium">{address.country}</p>
                                       </div>
                                       <div>
                                         <p className="text-sm text-gray-500">Shipping Method</p>
-                                        <p className="font-medium capitalize">{address.shipping_method}</p>
+                                        <p className="font-medium capitalize">{order.shipping_method}</p>
                                       </div>
                                     </div>
                                   </div>
@@ -513,7 +513,7 @@ export default function UserDashboard() {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="text-sm font-medium text-gray-900 capitalize">
-                                {payment.payment_method}
+                                {payment.method}
                               </div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
@@ -569,7 +569,7 @@ export default function UserDashboard() {
                             {address.apartment && `, ${address.apartment}`}
                           </p>
                           <p>
-                            {address.city}, {address.state} {address.zip}
+                            {address.city}, {address.state} {address.zip_code}
                           </p>
                           <p>{address.country}</p>
                           <p className="pt-2">{address.phone}</p>
