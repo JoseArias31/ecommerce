@@ -10,6 +10,7 @@ import { FloatingWhatsApp } from 'react-floating-whatsapp'
 import useProtectedRoute from "@/app/auth/register/Hooks/useProtectedRoutes";
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
+import { PageTransition } from '@/components/page-transitions';
 
 export default function RootLayout({ children }) {
   const [cartCount, setCartCount] = useState(0);
@@ -74,13 +75,39 @@ export default function RootLayout({ children }) {
     <div>Error while getting access</div>
   }
 
+  useEffect(() => {
+    // Add smooth scroll behavior
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+          target.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+          });
+        }
+      });
+    });
+
+    // Add smooth scroll behavior for all links
+    document.querySelectorAll('a').forEach(anchor => {
+      anchor.addEventListener('click', function () {
+        window.scrollTo({
+          top: 0,
+          behavior: 'smooth'
+        });
+      });
+    });
+  }, []);
+
   return (
-    <html lang="en">
+    <html lang="en" className="scroll-smooth">
       <head>
         <title>The Quick Shop</title>
         <meta name="description" content="A minimalist e-commerce store" />
       </head>
-      <body>
+      <body className="min-h-screen">
         <FloatingWhatsApp
           phoneNumber="16474252986"
           accountName="The Quick Shop"
