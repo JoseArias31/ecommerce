@@ -4,7 +4,7 @@ import '../styles/globals.css';
 import Link from "next/link"
 import { useEffect, useState } from "react";
 import Footer from "@/components/footer";
-import { Globe } from "lucide-react"
+import { Globe, Menu, X } from "lucide-react"
 import React from 'react'
 import { FloatingWhatsApp } from 'react-floating-whatsapp'
 import useProtectedRoute from "@/app/auth/register/Hooks/useProtectedRoutes";
@@ -15,6 +15,7 @@ export default function RootLayout({ children }) {
   const [cartCount, setCartCount] = useState(0);
   const [user, setUser] = useState(null);
   const [error, setError] = useState(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const session = useProtectedRoute(); // Custom hook to check session
   const router = useRouter();
 
@@ -94,7 +95,20 @@ export default function RootLayout({ children }) {
                 </h1>
               </Link>
 
-              <div className="flex items-center space-x-4">
+              {/* Mobile menu button */}
+              <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="lg:hidden text-black"
+              >
+                {isMobileMenuOpen ? (
+                  <X className="h-6 w-6" />
+                ) : (
+                  <Menu className="h-6 w-6" />
+                )}
+              </button>
+
+              {/* Desktop navigation */}
+              <div className="hidden lg:flex items-center space-x-4">
                 <Link href="/checkout" className="text-black">
                   <div className="p-2 relative">
                     <svg
@@ -184,6 +198,58 @@ export default function RootLayout({ children }) {
               </div>
             </div>
           </nav>
+
+          {/* Mobile menu */}
+          <div
+            className={`${
+              isMobileMenuOpen ? 'block' : 'hidden'
+            } lg:hidden absolute top-[64px] left-0 right-0 bg-white border-t p-4 z-40`}
+          >
+            <div className="flex flex-col space-y-2">
+              <Link
+                href="/checkout"
+                className="flex items-center p-2 text-black"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5 mr-2"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
+                  />
+                </svg>
+                Checkout
+              </Link>
+              <Link
+                href="/admin"
+                className="flex items-center p-2 text-black"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5 mr-2"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                  />
+                </svg>
+                Admin
+              </Link>
+            </div>
+          </div>
           {children}
           <Footer />
         </div>
