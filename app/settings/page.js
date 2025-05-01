@@ -137,22 +137,7 @@ export default function UserDashboard() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-black text-white py-4 px-6 flex justify-between items-center">
-        <h1 className="text-xl font-bold">The Quick Shop</h1>
-        <div className="flex items-center space-x-4">
-          <a href="/cart" className="relative">
-            <ShoppingBag className="h-6 w-6" />
-            {orders.length > 0 && (
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
-                {orders.length}
-              </span>
-            )}
-          </a>
-          <a href="/logout" className="text-sm">
-            Sign Out
-          </a>
-        </div>
-      </header>
+   
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8 max-w-6xl">
@@ -604,34 +589,6 @@ export default function UserDashboard() {
         </div>
       </main>
 
-      {/* Footer */}
-      <footer className="bg-black text-white py-8 px-6">
-        <div className="container mx-auto max-w-6xl">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="mb-4 md:mb-0">
-              <h2 className="text-xl font-bold">The Quick Shop</h2>
-              <p className="text-gray-400 text-sm mt-1">Premium products for your lifestyle</p>
-            </div>
-            <div className="flex space-x-6">
-              <a href="/about" className="text-sm text-gray-300 hover:text-white">
-                About
-              </a>
-              <a href="/contact" className="text-sm text-gray-300 hover:text-white">
-                Contact
-              </a>
-              <a href="/terms" className="text-sm text-gray-300 hover:text-white">
-                Terms
-              </a>
-              <a href="/privacy" className="text-sm text-gray-300 hover:text-white">
-                Privacy
-              </a>
-            </div>
-          </div>
-          <div className="mt-8 pt-8 border-t border-gray-800 text-center text-sm text-gray-400">
-            &copy; {new Date().getFullYear()} The Quick Shop. All rights reserved.
-          </div>
-        </div>
-      </footer>
     </div>
   )
 }
