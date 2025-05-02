@@ -101,14 +101,26 @@ export function AuthForm({ className, ...props }: React.ComponentProps<"div">) {
  
   };
 
-  // Get the token from URL query parameter
-  const token = new URLSearchParams(window.location.search).get('token');
-
-  useEffect(() => {
+  // Add this useEffect instead
+useEffect(() => {
+  // Only run on client side
+  if (typeof window !== 'undefined') {
+    const token = new URLSearchParams(window.location.search).get('token');
     if (token && token !== 'reset-password') {
       setResetToken(token);
     }
-  }, [token]);
+  }
+}, []); // Empty dependency array ensures this runs once on mount
+
+useEffect(() => {
+ 
+  if (typeof window !== 'undefined') {
+    const urlToken = new URLSearchParams(window.location.search).get('token');
+    if (urlToken && urlToken !== 'reset-password') {
+      setResetToken(urlToken);
+    }
+  }
+}, []); // Empty dependency array ensures this runs once on mount
 
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -132,9 +144,8 @@ export function AuthForm({ className, ...props }: React.ComponentProps<"div">) {
       setIsSubmitting(false);
     }
   };
-
   const handlePasswordReset = async () => {
-    if (!resetToken) return;
+    if (!resetToken) return; // Now using the state value
 
     const { error } = await supabase.auth.updateUser({
       password: newPassword,
