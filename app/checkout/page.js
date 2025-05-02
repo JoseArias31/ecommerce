@@ -49,6 +49,7 @@ export default function CheckoutPage() {
   const [activeTab, setActiveTab] = useState("credit")
   const [billingAddress, setBillingAddress] = useState("same")
   const [paymentStatus, setPaymentStatus] = useState("pending"); // For COD orders
+  const [order, setOrder] = useState(null);
   const setQuantity = useQuantityStore((state) => state.setQuantity)
 
   // Load cart from localStorage on mount
@@ -114,13 +115,16 @@ export default function CheckoutPage() {
           created_at: new Date().toISOString(),
           shipping_info: shippingInfo
         }])
-        .select()
+        .select('id, order_number')
         .single()
 
       if (orderError) {
         console.error("Order creation error:", orderError)
         throw new Error(`Order creation failed: ${orderError.message}`)
       }
+      
+      // Store the order data
+      setOrder(order)
 
       // Create order items
       const orderItems = cart.map(item => ({
@@ -190,7 +194,7 @@ export default function CheckoutPage() {
         firstName: shippingInfo.firstName,
         shippingInfo,
         orderDetails: {
-          orderId: order.id,
+          orderId: `#${order.order_number}`,
           amount: total,
           shippingMethod,
           items: cart.map(item => ({
@@ -208,7 +212,7 @@ export default function CheckoutPage() {
         firstName: 'Admin',
         shippingInfo,
         orderDetails: {
-          orderId: order.id,
+          orderId: `#${order.order_number}`,
           amount: total,
           shippingMethod,
           items: cart.map(item => ({
@@ -295,10 +299,7 @@ export default function CheckoutPage() {
               : `Thank you for your purchase. We've sent a confirmation email to ${shippingInfo.email}.`}
           </p>
           <p className="mb-8 text-gray-600">
-            Order #:{" "}
-            {Math.floor(Math.random() * 1000000)
-              .toString()
-              .padStart(6, "0")}
+            Order #: {order?.order_number || 'Processing...'}
           </p>
           <Link href="/">
             <button className="bg-black text-white px-6 py-2 rounded-md hover:bg-gray-800 transition-colors">
