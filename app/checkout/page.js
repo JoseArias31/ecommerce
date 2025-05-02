@@ -7,6 +7,8 @@ import { ArrowLeft, CreditCard, Check, MapPin, Package, ShoppingBag, Trash2 } fr
 import { useQuantityStore } from "../../store/quantityStore";
 import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
+import { EmailTemplate } from "@/components/EmailTemplate";
+import resend from "@/lib/resend";
 
 // Country list for international shipping
 const countries = [
@@ -181,7 +183,79 @@ export default function CheckoutPage() {
         throw new Error(`Shipping address creation failed: ${shippingError.message}`)
       }
 
-      // Clear cart after successful order
+      // Send email to customer
+      const customerEmail = shippingInfo.email;
+      const customerEmailData = {
+        type: 'customer',
+        firstName: shippingInfo.firstName,
+        shippingInfo,
+        orderDetails: {
+          orderId: order.id,
+          amount: total,
+          shippingMethod,
+          items: cart.map(item => ({
+            name: item.name,
+            quantity: item.quantity,
+            price: item.price
+          }))
+        }
+      };
+
+      // Send email to admin
+      const adminEmail = 'gojosearias@gmail.com';
+      const adminEmailData = {
+        type: 'admin',
+        firstName: 'Admin',
+        shippingInfo,
+        orderDetails: {
+          orderId: order.id,
+          amount: total,
+          shippingMethod,
+          items: cart.map(item => ({
+            name: item.name,
+            quantity: item.quantity,
+            price: item.price
+          }))
+        }
+      };
+
+      // Send emails using server-side API route
+      try {
+        console.log('Sending email data:', {
+          customerEmail,
+          adminEmail,
+          customerData: customerEmailData,
+          adminData: adminEmailData
+        });
+
+        const response = await fetch('/api/send-email', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            customerEmail,
+            adminEmail,
+            customerData: customerEmailData,
+            adminData: adminEmailData
+          }),
+        });
+
+        const responseData = await response.json();
+        console.log('Email API response:', responseData);
+
+        if (!response.ok) {
+          console.error("Failed to send emails via API");
+          // Don't throw this error - we want to complete the order even if emails fail
+          console.warn("Emails failed to send, but order will still be processed");
+        }
+      } catch (emailError) {
+        console.error("Email sending error:", emailError);
+        // Don't throw this error - we want to complete the order even if emails fail
+        console.warn("Emails failed to send, but order will still be processed");
+      }
+
+      // Clear cart after successful order and emails sent
       syncCart([])
       setIsProcessing(false)
       setIsComplete(true)
