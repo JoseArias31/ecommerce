@@ -28,7 +28,7 @@ export async function POST(request: Request) {
       customerResponse = await resend.emails.send({
         from: 'The Quick Shop <onboarding@resend.dev>', // 👈 Pre-verified domain
   to: customerEmail,
-  subject: 'Your Order Confirmation',
+        subject: `Your Order Confirmation #${customerData.orderDetails.orderId.replace('#', '')}`,
   react: EmailTemplate(customerData),
   replyTo: 'gojosearias@gmail.com' // 👈 Replies go to your Gmail
       });
@@ -42,7 +42,7 @@ export async function POST(request: Request) {
       adminResponse = await resend.emails.send({
         from: 'The Quick Shop <onboarding@resend.dev>',
         to: adminEmail,
-        subject: 'New Order Received',
+        subject: `New Order Received #${adminData.orderDetails.orderId.replace('#', '')}`,
         react: EmailTemplate(adminData)
       });
       console.log('Admin email response:', adminResponse);
