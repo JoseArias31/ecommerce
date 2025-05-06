@@ -7,7 +7,7 @@ export default function Footer() {
     <footer className="border-t mt-12">
       <div className="container mx-auto px-4 py-6">
         <div className="flex flex-col md:flex-row justify-between items-center">
-          <p className="text-sm text-gray-600">© {new Date().getFullYear()} The Quick Shop. All rights reserved. Develop by <a href="https://jose-arias-portfolio.vercel.app/"><span className="underline">Jose Arias</span></a></p>
+          <p className="text-sm text-gray-600">© {new Date().getFullYear()} The Quick Shop. All rights reserved. Developed by <a href="https://jose-arias-portfolio.vercel.app/"><span className="underline">Jose Arias</span></a></p>
           <div className="flex items-center space-x-4 mt-4 md:mt-0">
             <a href="/terms" className="text-sm text-gray-600 hover:text-black">
               Terms

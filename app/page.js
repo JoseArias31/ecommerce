@@ -212,7 +212,7 @@ export default function Home() {
       <div className="flex flex-col md:flex-row items-center  gap-4">
          {/* Category Pills */}
          <section id="categories" className="container mx-auto px-6 py-8">
-          <div className="flex overflow-x-auto pb-2 gap-2 w-full no-scrollbar">
+          <div className="flex overflow-x-auto gap-2 w-full no-scrollbar">
             {categories.map((category) => (
               <button
                 key={category}
@@ -229,10 +229,10 @@ export default function Home() {
           </div>
         </section>
         {/* Search Bar */}
-        <section className="container mx-auto px-6 pt-8 pb-2">
+        <section className="container mx-auto px-6 ">
           <input
             type="text"
-            className="w-full md:w-1/2 px-4 py-2 rounded-full border border-gray-200 focus:ring-2 focus:ring-indigo-100 outline-none text-gray-700 bg-white shadow-sm text-base"
+            className="w-full md:w-1/2 px-4 py-2 rounded-full border border-gray-400 focus:ring-2 focus:ring-indigo-100 outline-none text-gray-700 bg-white shadow-sm text-base"
             placeholder="Search products..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}

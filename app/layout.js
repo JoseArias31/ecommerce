@@ -167,7 +167,7 @@ export default function RootLayout({ children }) {
                       <circle cx="19" cy="21" r="1"></circle>
                       <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"></path>
                     </svg>
-                    <span className="absolute -top-1 -right-1 bg-red-500 text-black text-xs w-5 h-5 rounded-full flex items-center justify-center ">
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center ">
                       {cartCount}
                     </span>
                   </div>
@@ -246,7 +246,7 @@ export default function RootLayout({ children }) {
           <div
             className={`${
               isMobileMenuOpen ? 'block' : 'hidden'
-            } lg:hidden absolute top-[64px] left-0 right-0 bg-white border-t p-4 z-40`}
+            } lg:hidden absolute top-[90px] left-0 right-0 bg-white border-t p-4 z-40`}
           >
             <div className="flex flex-col space-y-2">
               <Link
@@ -269,6 +269,9 @@ export default function RootLayout({ children }) {
                   />
                 </svg>
                 Checkout
+                <span className=" bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center ml-2">
+                      {cartCount}
+                    </span>
               </Link>
 
               {user?.status === 'active' && (
