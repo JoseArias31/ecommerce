@@ -3,6 +3,7 @@
 import '../styles/globals.css';
 import Link from "next/link"
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import Footer from "@/components/footer";
 import { Globe, Menu, X } from "lucide-react"
 import React from 'react'
@@ -116,10 +117,22 @@ export default function RootLayout({ children }) {
         <div className="flex flex-col min-h-screen">
           <nav className="border-b sticky top-0 z-50 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/60 transition-shadow">
             <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-              <Link href="/">
-                <h1 className="text-4xl font-bold text-black">
-                  The Quick Shop
-                </h1>
+              <Link href="/" className="relative group flex flex-row">
+                <div className="relative z-10">
+                  <h1 className="text-4xl font-bold text-black">
+                    The Quick Shop
+                  </h1>
+                  <p className="text-sm text-gray-600 text-center -mt-1">Shop Quick, Ship Quicker</p>
+                </div>
+                <div className=" w-16 h-16  group-hover:opacity-60 ">
+                  <Image 
+                    src="/logoecommerce.png" 
+                    alt="Logo" 
+                    width={64} 
+                    height={64}
+                    className="object-contain"
+                  />
+                </div>
               </Link>
 
               {/* Mobile menu button */}
