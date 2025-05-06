@@ -9,7 +9,7 @@ import AddToCartButton from "@/components/add-to-cart-button"
 import { useQuantityStore } from "@/store/quantityStore"
 
 export default function ProductPage({ params }) {
-  const { id } = use(params)
+  const { id } = params
   const [product, setProduct] = useState(null)
   const [relatedProducts, setRelatedProducts] = useState([])
   const [loading, setLoading] = useState(true)
@@ -225,7 +225,10 @@ export default function ProductPage({ params }) {
 
           {/* Add to Cart Button */}
           <div className="mt-8">
-            <AddToCartButton product={product} quantity={Number.isFinite(quantity) ? quantity : 1} />
+            <AddToCartButton product={{
+              ...product,
+              images: productImages  // Include the product images in the product object
+            }} quantity={Number.isFinite(quantity) ? quantity : 1} />
           </div>
 
           {/* Shipping & Returns */}

@@ -23,6 +23,7 @@ interface EmailTemplateProps {
       name: string;
       quantity: number;
       price: number;
+      image: string;
     }>;
   };
 }
@@ -33,75 +34,336 @@ export const EmailTemplate: React.FC<Readonly<EmailTemplateProps>> = ({
   shippingInfo,
   orderDetails,
 }) => (
-  <div style={{ fontFamily: "Arial, sans-serif", maxWidth: "600px", margin: "0 auto" }}>
-    <div style={{ background: "#f5f5f5", padding: "20px" }}>
-      <h1 style={{ color: "#333", fontSize: "24px", margin: "0 0 20px 0" }}>
-        {type === 'customer' ? 'Your Order Confirmation' : 'New Order Received'}
+  <div style={{
+    fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
+    maxWidth: "600px",
+    margin: "0 auto",
+    backgroundColor: "#ffffff",
+    color: "#333333",
+    lineHeight: 1.5,
+    border: "1px solid #e5e7eb",
+    borderRadius: "8px",
+    overflow: "hidden"
+  }}>
+    {/* Header */}
+    <div style={{
+      padding: "30px 20px",
+      background: "linear-gradient(135deg, #3B82F6 0%, #1D4ed8 100%)",
+      color: "white",
+      textAlign: "center"
+    }}>
+      <img 
+        src="https://thequickshop.com/logo-white.png" 
+        alt="The Quick Shop Logo" 
+        style={{ 
+          height: "32px",
+          marginBottom: "20px",
+          width: "auto" 
+        }}
+      />
+      <h1 style={{
+        fontSize: "24px",
+        fontWeight: 600,
+        margin: "0",
+        letterSpacing: "0.5px"
+      }}>
+        {type === 'customer' 
+          ? `Thanks for your order, ${firstName}!` 
+          : '🛍️ New Order Alert'}
       </h1>
-
-      <div style={{ background: "#fff", padding: "20px", borderRadius: "4px" }}>
-        <h2 style={{ color: "#666", fontSize: "18px", margin: "0 0 15px 0" }}>
-          Order Details
-        </h2>
-        <p style={{ margin: "0 0 10px 0" }}>
-          Order ID: {orderDetails.orderId}
+    </div>
+    
+    {/* Order Summary */}
+    <div style={{
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+      padding: "20px",
+      background: "#f9fafb",
+      borderBottom: "1px solid #e5e7eb"
+    }}>
+      <div style={{ minWidth: "45%" }}>
+        <p style={{
+          fontSize: "12px",
+          color: "#6b7280",
+          margin: "0 0 5px 0",
+          letterSpacing: "0.5px"
+        }}>
+          ORDER NUMBER
         </p>
-        <p style={{ margin: "0 0 10px 0" }}>
-          Total Amount: ${orderDetails.amount.toFixed(2)}
+        <p style={{
+          fontSize: "18px",
+          fontWeight: 600,
+          color: "#111827",
+          margin: "0",
+          wordBreak: "break-word"
+        }}>
+          #{orderDetails.orderId.replace('#', '')}
         </p>
-        <p style={{ margin: "0 0 10px 0" }}>
-          Shipping Method: {orderDetails.shippingMethod}
-        </p>
-
-        <h3 style={{ color: "#666", fontSize: "16px", margin: "20px 0 10px 0" }}>
-          Items Ordered
-        </h3>
-        <div style={{ border: "1px solid #eee", padding: "10px", borderRadius: "4px" }}>
-          {orderDetails.items.map((item, index) => (
-            <div key={index} style={{ marginBottom: "10px" }}>
-              <p style={{ margin: "0" }}>
-                {item.name} × {item.quantity}
-              </p>
-              <p style={{ margin: "0", color: "#666" }}>
-                ${item.price.toFixed(2)} each
-              </p>
-            </div>
-          ))}
-        </div>
-
-        <h3 style={{ color: "#666", fontSize: "16px", margin: "20px 0 10px 0" }}>
-          Shipping Information
-        </h3>
-        <div style={{ border: "1px solid #eee", padding: "10px", borderRadius: "4px" }}>
-          <p style={{ margin: "0 0 5px 0" }}>
-            {shippingInfo.firstName} {shippingInfo.lastName}
-          </p>
-          <p style={{ margin: "0 0 5px 0" }}>
-            {shippingInfo.address}
-            {shippingInfo.apartment && `, ${shippingInfo.apartment}`}
-          </p>
-          <p style={{ margin: "0 0 5px 0" }}>
-            {shippingInfo.city}, {shippingInfo.state} {shippingInfo.zipCode}
-          </p>
-          <p style={{ margin: "0 0 5px 0" }}>
-            {shippingInfo.country}
-          </p>
-          <p style={{ margin: "0 0 5px 0" }}>
-            Phone: {shippingInfo.phone}
-          </p>
-          <p style={{ margin: "0" }}>
-            Email: {shippingInfo.email}
-          </p>
-        </div>
-
-        {type === 'customer' && (
-          <div style={{ marginTop: "20px" }}>
-            <p style={{ color: "#666" }}>
-              Thank you for your order! We will notify you when your items ship.
-            </p>
-          </div>
-        )}
       </div>
+      <div style={{ minWidth: "45%", textAlign: "right" }}>
+        <p style={{
+          fontSize: "12px",
+          color: "#6b7280",
+          margin: "0 0 5px 0",
+          letterSpacing: "0.5px"
+        }}>
+          TOTAL AMOUNT
+        </p>
+        <p style={{
+          fontSize: "18px",
+          fontWeight: 600,
+          color: "#111827",
+          margin: "0"
+        }}>
+          ${orderDetails.amount.toFixed(2)}
+        </p>
+      </div>
+    </div>
+
+ {/* Items List - Professionally Styled */}
+<div style={{ padding: "0 20px", margin: "20px 0" }}>
+  <h3 style={{
+    fontSize: "14px",
+    fontWeight: 600,
+    color: "#6b7280",
+    margin: "0 0 15px 0",
+    letterSpacing: "0.5px",
+    textTransform: "uppercase"
+  }}>
+    YOUR ITEMS
+  </h3>
+  
+  {orderDetails.items.map((item, index) => (
+    <div key={index} style={{
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+      padding: "12px 0",
+      borderBottom: index < orderDetails.items.length - 1 
+        ? "1px solid #f3f4f6" 
+        : "none",
+      gap: "15px"
+    }}>
+      {/* Product Info */}
+      <div style={{ flex: 1, display: "flex", gap: "16px", alignItems: "center" }}>
+        {/* <div style={{
+          width: "48px",
+          height: "48px",
+          borderRadius: "8px",
+          overflow: "hidden",
+          border: "1px solid #e5e7eb",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center"
+        }}>
+          <img 
+            src={item.image} 
+            alt={item.name}
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              display: "block"
+            }}
+          />
+        </div> */}
+        <div>
+          <p style={{
+            margin: "0 0 4px 0",
+            fontSize: "15px",
+            fontWeight: 500,
+            color: "#111827",
+            lineHeight: 1.4
+          }}>
+            {item.name}
+          </p>
+          <div style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "8px"
+          }}>
+            <div style={{
+              width: "24px",
+              height: "24px",
+              backgroundColor: "#f3f4f6",
+              borderRadius: "4px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center"
+            }}>
+              <span style={{
+                fontSize: "12px",
+                fontWeight: 600,
+                color: "#4b5563"
+              }}>
+                {item.quantity}
+              </span>
+            </div>
+            <span style={{
+              fontSize: "13px",
+              color: "#6b7280"
+            }}>
+              Quantity
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Price Info */}
+      <div style={{
+        textAlign: "right",
+        minWidth: "80px"
+      }}>
+        <p style={{
+          margin: "0 0 4px 0",
+          fontSize: "15px",
+          fontWeight: 500,
+          color: "#111827"
+        }}>
+          ${item.price.toFixed(2)}
+        </p>
+        <p style={{
+          margin: "0",
+          fontSize: "13px",
+          color: "#6b7280",
+          fontWeight: 500
+        }}>
+          ${(item.price * item.quantity).toFixed(2)}
+        </p>
+      </div>
+    </div>
+  ))}
+</div>
+
+    {/* Shipping Information */}
+    <div style={{
+      padding: "20px",
+      background: "#f9fafb",
+      margin: "20px",
+      borderRadius: "8px"
+    }}>
+      <h3 style={{
+        fontSize: "14px",
+        fontWeight: 600,
+        color: "#6b7280",
+        margin: "0 0 15px 0",
+        letterSpacing: "0.5px",
+        textTransform: "uppercase"
+      }}>
+        SHIPPING INFORMATION
+      </h3>
+      <div style={{ lineHeight: "1.6" }}>
+        <p style={{ margin: "0 0 8px 0", fontSize: "15px", color: "#111827" }}>
+          <strong>{shippingInfo.firstName} {shippingInfo.lastName}</strong>
+        </p>
+        <p style={{ margin: "0 0 8px 0", fontSize: "15px", color: "#111827" }}>
+          {shippingInfo.address}
+          {shippingInfo.apartment && `, ${shippingInfo.apartment}`}
+        </p>
+        <p style={{ margin: "0 0 8px 0", fontSize: "15px", color: "#111827" }}>
+          {shippingInfo.city}, {shippingInfo.state} {shippingInfo.zipCode}
+        </p>
+        <p style={{ margin: "0 0 8px 0", fontSize: "15px", color: "#111827" }}>
+          {shippingInfo.country}
+        </p>
+        <p style={{ margin: "0 0 8px 0", fontSize: "15px", color: "#111827" }}>
+          📱 {shippingInfo.phone}
+        </p>
+        <p style={{ margin: "0", fontSize: "15px", color: "#111827" }}>
+          ✉️ {shippingInfo.email}
+        </p>
+      </div>
+    </div>
+
+    {/* Shipping Method */}
+    <div style={{
+      padding: "20px",
+      background: "#f9fafb",
+      margin: "0 20px 20px 20px",
+      borderRadius: "8px"
+    }}>
+      <h3 style={{
+        fontSize: "14px",
+        fontWeight: 600,
+        color: "#6b7280",
+        margin: "0 0 15px 0",
+        letterSpacing: "0.5px",
+        textTransform: "uppercase"
+      }}>
+        SHIPPING METHOD
+      </h3>
+      <p style={{
+        margin: "0",
+        fontSize: "15px",
+        color: "#111827",
+        display: "flex",
+        alignItems: "center",
+        gap: "8px"
+      }}>
+        🚚 {orderDetails.shippingMethod}
+      </p>
+      {type === 'customer' && (
+        <p style={{
+          fontSize: "13px",
+          color: "#6b7280",
+          margin: "12px 0 0 0",
+          fontStyle: "italic"
+        }}>
+          We'll notify you when your order ships
+        </p>
+      )}
+    </div>
+
+    {/* Footer */}
+    <div style={{
+      padding: "20px",
+      textAlign: "center",
+      background: "#f9fafb",
+      borderTop: "1px solid #e5e7eb"
+    }}>
+      {type === 'customer' ? (
+        <>
+          <p style={{
+            fontSize: "14px",
+            color: "#6b7280",
+            margin: "0 0 16px 0"
+          }}>
+            Need help? Reply to this email or contact us at <a 
+              href="mailto:support@thequickshop.com" 
+              style={{
+                color: "#3B82F6", 
+                textDecoration: "none",
+                fontWeight: 500
+              }}>
+              support@thequickshop.com
+            </a>
+          </p>
+          <p style={{
+            fontSize: "12px",
+            color: "#9ca3af",
+            margin: "16px 0 0 0"
+          }}>
+            © {new Date().getFullYear()} The Quick Shop. All rights reserved.
+          </p>
+        </>
+      ) : (
+        <p style={{
+          fontSize: "14px",
+          color: "#6b7280",
+          margin: "0"
+        }}>
+          This order requires processing. <a 
+            href={`https://admin.thequickshop.com/orders/${orderDetails.orderId}`} 
+            style={{
+              color: "#3B82F6", 
+              fontWeight: 500, 
+              textDecoration: "none"
+            }}>
+            View in dashboard →
+          </a>
+        </p>
+      )}
     </div>
   </div>
 );

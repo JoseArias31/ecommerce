@@ -17,12 +17,15 @@ export default function AddToCartButton({ product }) {
     if (existingProductIndex !== -1) {
       existingCart[existingProductIndex].quantity += quantity
     } else {
+      // Use the first image from product.images if available, otherwise fall back to product.image
+      const productImage = product.images?.[0]?.url || product.image || '/placeholder.svg'
+      
       existingCart.push({
         id: product.id,
         name: product.name,
         quantity: quantity,
         price: product.price,
-        image: product.image
+        image: productImage
       })
     }
 
