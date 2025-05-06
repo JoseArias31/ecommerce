@@ -9,7 +9,7 @@ import AddToCartButton from "@/components/add-to-cart-button"
 import { useQuantityStore } from "@/store/quantityStore"
 
 export default function ProductPage({ params }) {
-  const { id } = use(params)
+  const { id } = params
   const [product, setProduct] = useState(null)
   const [relatedProducts, setRelatedProducts] = useState([])
   const [loading, setLoading] = useState(true)
