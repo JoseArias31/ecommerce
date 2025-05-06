@@ -113,6 +113,7 @@ export default function RootLayout({ children }) {
           phoneNumber="16474252986"
           accountName="The Quick Shop"
           statusMessage="Typically replies within 2 minutes"
+          avatar='/logowithbackground.png'
         />
         <div className="flex flex-col min-h-screen">
           <nav className="border-b sticky top-0 z-50 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/60 transition-shadow">
