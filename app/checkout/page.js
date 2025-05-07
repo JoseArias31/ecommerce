@@ -519,7 +519,10 @@ export default function CheckoutPage() {
                 <div className="flex border-b">
                   <button
                     type="button"
-                    onClick={() => { setActiveTab("credit"); setPaymentMethod("credit"); }}
+                    onClick={() => {
+                      setActiveTab("credit");
+                      setPaymentMethod("credit");
+                    }}
                     className={`flex-1 py-2 px-4 text-center ${
                       activeTab === "credit"
                         ? "border-b-2 border-black font-medium"
@@ -530,7 +533,10 @@ export default function CheckoutPage() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => { setActiveTab("paypal"); setPaymentMethod("paypal"); }}
+                    onClick={() => {
+                      setActiveTab("paypal");
+                      setPaymentMethod("paypal");
+                    }}
                     className={`flex-1 py-2 px-4 text-center ${
                       activeTab === "paypal"
                         ? "border-b-2 border-black font-medium"
@@ -541,7 +547,10 @@ export default function CheckoutPage() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => { setActiveTab("apple"); setPaymentMethod("apple"); }}
+                    onClick={() => {
+                      setActiveTab("apple");
+                      setPaymentMethod("apple");
+                    }}
                     className={`flex-1 py-2 px-4 text-center ${
                       activeTab === "apple"
                         ? "border-b-2 border-black font-medium"
@@ -552,7 +561,10 @@ export default function CheckoutPage() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => { setActiveTab("cod"); setPaymentMethod("cod"); }}
+                    onClick={() => {
+                      setActiveTab("cod");
+                      setPaymentMethod("cod");
+                    }}
                     className={`flex-1 py-2 px-4 text-center ${
                       activeTab === "cod"
                         ? "border-b-2 border-black font-medium bg-yellow-100"
@@ -563,51 +575,66 @@ export default function CheckoutPage() {
                   </button>
                 </div>
                 <div className="pt-4">
-                {activeTab === "credit" && (
-  <div className="space-y-4">
-    <div>
-      <label htmlFor="cardName" className="block text-sm font-medium text-gray-700 mb-1">
-        Name on Card
-      </label>
-      <input
-        id="cardName"
-        name="cardName"
-        placeholder="John Doe"
-        required
-        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
-      />
-    </div>
-    
-    <form action="/api/checkout_sessions" method="POST">
-      {/* Hidden fields with order data */}
-      <input type="hidden" name="amount" value={total} />
-      <input type="hidden" name="shippingInfo" value={JSON.stringify(shippingInfo)} />
-      <input type="hidden" name="cart" value={JSON.stringify(cart)} />
-      <input type="hidden" name="shippingMethod" value={shippingMethod} />
-      
-      <button
-        type="submit"
-        className="w-full bg-black text-white py-2 px-4 rounded-md hover:bg-gray-800 transition-colors"
-      >
-        Pay ${total.toFixed(2)} USD
-      </button>
-    </form>
-  </div>
-)}
+                  {activeTab === "credit" && (
+                    <div className="space-y-4 ">
+                        <div className="text-center p-6 border rounded-md">
+                      <p className="mb-4">
+                        You'll be redirected to complete your purchase
+                        securely.
+                      </p>
+                      <form
+                        action="/api/checkout_sessions"
+                        method="POST"
+                        className="justify-self-center"
+                      >
+                        {/* Hidden fields with order data */}
+                        <input type="hidden" name="amount" value={total} />
+                        <input
+                          type="hidden"
+                          name="shippingInfo"
+                          value={JSON.stringify(shippingInfo)}
+                        />
+                        <input
+                          type="hidden"
+                          name="cart"
+                          value={JSON.stringify(cart)}
+                        />
+                        <input
+                          type="hidden"
+                          name="shippingMethod"
+                          value={shippingMethod}
+                        />
+
+                        <button
+                          type="submit"
+                          className="justify-center items-center  bg-black text-white py-2 px-4 rounded-md hover:bg-gray-800 transition-colors"
+                        >
+                          Checkout 
+                        </button>
+                      </form>
+                    </div>
+                     
+                    </div>
+                  )}
                   {activeTab === "paypal" && (
                     <div className="text-center p-6 border rounded-md">
-                      <p className="mb-4">You'll be redirected to PayPal to complete your purchase securely.</p>
+                      <p className="mb-4">
+                        You'll be redirected to PayPal to complete your purchase
+                        securely.
+                      </p>
                       <button
                         type="button"
                         className="bg-[#0070ba] hover:bg-[#005ea6] text-white px-4 py-2 rounded-md transition-colors"
                       >
-                        Continue with PayPal
+                        Continue with PayPal 
                       </button>
                     </div>
                   )}
                   {activeTab === "apple" && (
                     <div className="text-center p-6 border rounded-md">
-                      <p className="mb-4">Complete your purchase with Apple Pay.</p>
+                      <p className="mb-4">
+                        Complete your purchase with Apple Pay.
+                      </p>
                       <button
                         type="button"
                         className="bg-black hover:bg-gray-800 text-white px-4 py-2 rounded-md transition-colors flex items-center justify-center mx-auto"
@@ -636,74 +663,37 @@ export default function CheckoutPage() {
                   )}
                   {activeTab === "cod" && (
                     <div className="border border-yellow-400 bg-yellow-50 p-4 rounded-md text-yellow-900 mt-2">
-                      <h4 className="font-bold text-lg mb-2">Cash on Delivery (COD)</h4>
+                      <h4 className="font-bold text-lg mb-2">
+                        Cash on Delivery (COD)
+                      </h4>
                       <ul className="list-disc ml-6 mb-2">
-                        <li>You must pay <b>in cash</b> or <b>e-transfer</b> to the delivery person.</li>
-                        <li>Please have the <b>exact amount</b> ready.</li>
-                        <li>A COD handling fee of <b>${COD_FEE}</b> will be added to your order.</li>
-                        <li>Optionally, our courier may have a POS machine for card payments.</li>
+                        <li>
+                          You must pay <b>in cash</b> or <b>e-transfer</b> to
+                          the delivery person.
+                        </li>
+                        <li>
+                          Please have the <b>exact amount</b> ready.
+                        </li>
+                        <li>
+                          A COD handling fee of <b>${COD_FEE}</b> will be added
+                          to your order.
+                        </li>
+                        <li>
+                          Optionally, our courier may have a POS machine for
+                          card payments.
+                        </li>
                       </ul>
-                      <div className="font-semibold">Your order will be marked as <span className="text-orange-600">Pending Order in Process</span> until payment is confirmed by our staff or the delivery person.</div>
+                      <div className="font-semibold">
+                        Your order will be marked as{" "}
+                        <span className="text-orange-600">
+                          Pending Order in Process
+                        </span>{" "}
+                        until payment is confirmed by our staff or the delivery
+                        person.
+                      </div>
                     </div>
                   )}
                 </div>
-              </div>
-            </div>
-
-            <div className="border-t pt-6">
-              <h3 className="font-medium mb-4">Billing Address</h3>
-              <div className="space-y-3">
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="radio"
-                    id="same"
-                    name="billingAddress"
-                    value="same"
-                    checked={billingAddress === "same"}
-                    onChange={() => setBillingAddress("same")}
-                    className="h-4 w-4 text-black focus:ring-gray-500 border-gray-300"
-                  />
-                  <label htmlFor="same" className="font-normal cursor-pointer">
-                    Same as shipping address
-                  </label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="radio"
-                    id="different"
-                    name="billingAddress"
-                    value="different"
-                    checked={billingAddress === "different"}
-                    onChange={() => setBillingAddress("different")}
-                    className="h-4 w-4 text-black focus:ring-gray-500 border-gray-300"
-                  />
-                  <label htmlFor="different" className="font-normal cursor-pointer">
-                    Use a different billing address
-                  </label>
-                </div>
-              </div>
-            </div>
-
-            <div className="border-t pt-6">
-              <h3 className="font-medium mb-4">Order Review</h3>
-              <div className="space-y-4">
-                {cart.map((item) => (
-                  <div key={item.id} className="flex items-center py-2">
-                    <div className="w-16 h-16 relative flex-shrink-0 bg-gray-100 rounded-md overflow-hidden">
-                      <Image
-                        src={item.image || "/placeholder.svg?height=64&width=64"}
-                        alt={item.name}
-                        fill
-                        className="object-cover object-center"
-                      />
-                    </div>
-                    <div className="ml-4 flex-grow">
-                      <h4 className="font-medium">{item.name}</h4>
-                      <p className="text-sm text-gray-600">Qty: {item.quantity}</p>
-                    </div>
-                    <div className="ml-4">${(item.price * item.quantity).toFixed(2)}</div>
-                  </div>
-                ))}
               </div>
             </div>
 
@@ -736,12 +726,14 @@ export default function CheckoutPage() {
                   </svg>
                   Processing...
                 </span>
+              ) : isCOD ? (
+                `Place Order (COD) - $${total.toFixed(2)} USD`
               ) : (
-                isCOD ? `Place Order (COD) - $${total.toFixed(2)} USD` : `Pay $${total.toFixed(2)} USD`
+                `Pay $${total.toFixed(2)} USD`
               )}
             </button>
           </form>
-        )
+        );
 
       default:
         return null
@@ -811,6 +803,61 @@ export default function CheckoutPage() {
             {!isComplete && (
               <div className="bg-gray-50 p-6 rounded-lg sticky top-6">
                 <h2 className="text-xl font-bold mb-4">Order Summary</h2>
+                <div className="border-t pt-6">
+              <h3 className="font-bold mb-4 ">Order Review</h3>
+              <div className="space-y-4">
+                {cart.map((item) => (
+                  <div key={item.id} className="flex items-center py-2">
+                    <div className="w-16 h-16 relative flex-shrink-0 bg-gray-100 rounded-md overflow-hidden">
+                      <Image
+                        src={item.image || "/placeholder.svg?height=64&width=64"}
+                        alt={item.name}
+                        fill
+                        className="object-cover object-center"
+                      />
+                    </div>
+                    <div className="ml-4 flex-grow">
+                      <h4 className="font-medium">{item.name}</h4>
+                      <p className="text-sm text-gray-600">Qty: {item.quantity}</p>
+                    </div>
+                    <div className="ml-4 font-semibold">${(item.price * item.quantity).toFixed(2)}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="border-t pt-6">
+              <h3 className="font-medium mb-4">Billing Address</h3>
+              <div className="space-y-3">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    id="same"
+                    name="billingAddress"
+                    value="same"
+                    checked={billingAddress === "same"}
+                    onChange={() => setBillingAddress("same")}
+                    className="h-4 w-4 text-black focus:ring-gray-500 border-gray-300"
+                  />
+                  <label htmlFor="same" className="font-normal cursor-pointer">
+                    Same as shipping address
+                  </label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    id="different"
+                    name="billingAddress"
+                    value="different"
+                    checked={billingAddress === "different"}
+                    onChange={() => setBillingAddress("different")}
+                    className="h-4 w-4 text-black focus:ring-gray-500 border-gray-300"
+                  />
+                  <label htmlFor="different" className="font-normal cursor-pointer">
+                    Use a different billing address
+                  </label>
+                </div>
+              </div>
+            </div>
 
                 <div className="space-y-2 mb-4">
                   <div className="flex justify-between">
