@@ -563,56 +563,37 @@ export default function CheckoutPage() {
                   </button>
                 </div>
                 <div className="pt-4">
-                  {activeTab === "credit" && (
-                    <div className="space-y-4">
-                      <div>
-                        <label htmlFor="cardName" className="block text-sm font-medium text-gray-700 mb-1">
-                          Name on Card
-                        </label>
-                        <input
-                          id="cardName"
-                          placeholder="John Doe"
-                          required
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
-                        />
-                      </div>
-                      <div>
-                        <label htmlFor="cardNumber" className="block text-sm font-medium text-gray-700 mb-1">
-                          Card Number
-                        </label>
-                        <input
-                          id="cardNumber"
-                          placeholder="1234 5678 9012 3456"
-                          required
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
-                        />
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label htmlFor="expiry" className="block text-sm font-medium text-gray-700 mb-1">
-                            Expiry Date
-                          </label>
-                          <input
-                            id="expiry"
-                            placeholder="MM/YY"
-                            required
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
-                          />
-                        </div>
-                        <div>
-                          <label htmlFor="cvc" className="block text-sm font-medium text-gray-700 mb-1">
-                            CVC
-                          </label>
-                          <input
-                            id="cvc"
-                            placeholder="123"
-                            required
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  )}
+                {activeTab === "credit" && (
+  <div className="space-y-4">
+    <div>
+      <label htmlFor="cardName" className="block text-sm font-medium text-gray-700 mb-1">
+        Name on Card
+      </label>
+      <input
+        id="cardName"
+        name="cardName"
+        placeholder="John Doe"
+        required
+        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
+      />
+    </div>
+    
+    <form action="/api/checkout_sessions" method="POST">
+      {/* Hidden fields with order data */}
+      <input type="hidden" name="amount" value={total} />
+      <input type="hidden" name="shippingInfo" value={JSON.stringify(shippingInfo)} />
+      <input type="hidden" name="cart" value={JSON.stringify(cart)} />
+      <input type="hidden" name="shippingMethod" value={shippingMethod} />
+      
+      <button
+        type="submit"
+        className="w-full bg-black text-white py-2 px-4 rounded-md hover:bg-gray-800 transition-colors"
+      >
+        Pay ${total.toFixed(2)} USD
+      </button>
+    </form>
+  </div>
+)}
                   {activeTab === "paypal" && (
                     <div className="text-center p-6 border rounded-md">
                       <p className="mb-4">You'll be redirected to PayPal to complete your purchase securely.</p>
