@@ -27,6 +27,68 @@ const countries = [
 
 const COD_FEE = 5; // You can change to 10 if needed
 
+// Add this component at the top of the file, before the main Checkout component
+function CartDisplay({ cart, updateQuantity, setQuantity, removeItem }) {
+  return (
+    <div className="mt-6 space-y-4">
+      <h3 className="font-medium text-sm">Your Cart ({cart.length})</h3>
+      <div className="max-h-60 overflow-y-auto space-y-3">
+        {cart.map((item) => (
+          <div key={item.id} className="flex items-center py-2 border-b">
+            <div className="w-12 h-12 relative flex-shrink-0 bg-gray-100 rounded-md overflow-hidden">
+              <Image
+                src={item.image || "/placeholder.svg?height=48&width=48"}
+                alt={item.name}
+                fill
+                className="object-cover object-center"
+              />
+            </div>
+            <div className="ml-3 flex-grow">
+              <h4 className="text-sm font-medium">{item.name}</h4>
+              <div className="flex items-center mt-1">
+                <button
+                  className="w-6 h-6 flex items-center justify-center border rounded-md text-sm bg-white hover:bg-gray-200"
+                  onClick={() => {
+                    const newQty = Math.max(1, item.quantity - 1);
+                    updateQuantity(item.id, newQty);
+                    setQuantity(item.id, newQty);
+                  }}
+                  aria-label="Decrease quantity"
+                >
+                  -
+                </button>
+                <span className="mx-2 text-sm">{item.quantity}</span>
+                <button
+                  className="w-6 h-6 flex items-center justify-center border rounded-md text-sm bg-white hover:bg-gray-200"
+                  onClick={() => {
+                    const newQty = item.quantity + 1;
+                    updateQuantity(item.id, newQty);
+                    setQuantity(item.id, newQty);
+                  }}
+                  aria-label="Increase quantity"
+                >
+                  +
+                </button>
+                <button
+                  className="ml-3 text-gray-400 hover:text-red-500"
+                  onClick={() => {
+                    removeItem(item.id);
+                    setQuantity(item.id, 1);
+                  }}
+                  aria-label="Remove item"
+                >
+                  <Trash2 className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+            <div className="ml-2 text-sm">${(item.price * item.quantity).toFixed(2)}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function CheckoutPage() {
   const [cart, setCart] = useState([])
   const [activeStep, setActiveStep] = useState("shipping")
@@ -92,8 +154,128 @@ export default function CheckoutPage() {
 
   const handlePaymentSubmit = async (e) => {
     e.preventDefault()
-    setIsProcessing(true)
+    
+    // Check if user is authenticated
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+    
+    if (sessionError || !session) {
+      alert('Please sign in to complete your purchase')
+      return
+    }
+    
+    if (paymentMethod === 'credit') {
+      // Handle Stripe checkout
+      setIsProcessing(true)
+      try {
+        // Create order first
+        const { data: { user }, error: authError } = await supabase.auth.getUser()
+        if (authError) {
+          throw new Error(`Authentication error: ${authError.message}`)
+        }
+        if (!user) {
+          throw new Error("User not authenticated")
+        }
 
+        // Create order
+        const { data: order, error: orderError } = await supabase
+          .from("orders")
+          .insert([{
+            user_id: user.id,
+            amount: total,
+            shipping_method: shippingMethod,
+            status: "pending", // Will be updated by webhook
+            created_at: new Date().toISOString(),
+            shipping_info: shippingInfo
+          }])
+          .select('id, order_number')
+          .single()
+
+        if (orderError) {
+          console.error("Order creation error:", orderError)
+          throw new Error(`Order creation failed: ${orderError.message}`)
+        }
+
+        // Create order items
+        const orderItems = cart.map(item => ({
+          order_id: order.id,
+          product_id: item.id,
+          quantity: item.quantity,
+          price: item.price,
+          name: item.name,
+          image: item.image
+        }))
+
+        const { error: orderItemsError } = await supabase
+          .from("order_items")
+          .insert(orderItems)
+
+        if (orderItemsError) {
+          console.error("Order items creation error:", orderItemsError)
+          throw new Error(`Order items creation failed: ${orderItemsError.message}`)
+        }
+
+        // Create shipping address
+        const { error: shippingError } = await supabase
+          .from("shipping_addresses")
+          .insert([
+            {
+              order_id: order.id,
+              user_id: user.id,
+              address: shippingInfo.address,
+              apartment: shippingInfo.apartment,
+              city: shippingInfo.city,
+              state: shippingInfo.state,
+              zip_code: shippingInfo.zipCode,
+              country: shippingInfo.country,
+              first_name: shippingInfo.firstName,
+              last_name: shippingInfo.lastName,
+              email: shippingInfo.email,
+              created_at: new Date().toISOString(),
+            },
+          ]);
+
+        if (shippingError) {
+          console.error("Shipping address creation error:", shippingError)
+          throw new Error(`Shipping address creation failed: ${shippingError.message}`)
+        }
+
+        // Now create Stripe checkout session
+        const responseStripe = await fetch('/api/checkout_sessions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`
+          },
+          body: JSON.stringify({
+            cart,
+            shippingInfo,
+            total,
+            shippingMethod,
+            orderId: order.id, // Pass the order ID to the checkout session
+          }),
+        })
+
+        if (!responseStripe.ok) {
+          const errorStripe = await responseStripe.json()
+          throw new Error(errorStripe.error || 'Failed to create checkout session')
+        }
+
+        const { url } = await responseStripe.json()
+        if (url) {
+          window.location.href = url
+        } else {
+          throw new Error('No redirect URL received')
+        }
+      } catch (error) {
+        console.error('Checkout error:', error)
+        alert(error.message || 'Error processing your payment. Please try again.')
+        setIsProcessing(false)
+      }
+      return
+    }
+    
+    // Handle other payment methods (COD, etc.)
+    setIsProcessing(true)
     try {
       // Get current user
       const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -250,12 +432,10 @@ export default function CheckoutPage() {
 
         if (!response.ok) {
           console.error("Failed to send emails via API");
-          // Don't throw this error - we want to complete the order even if emails fail
           console.warn("Emails failed to send, but order will still be processed");
         }
       } catch (emailError) {
         console.error("Email sending error:", emailError);
-        // Don't throw this error - we want to complete the order even if emails fail
         console.warn("Emails failed to send, but order will still be processed");
       }
 
@@ -460,6 +640,39 @@ export default function CheckoutPage() {
                 />
               </div>
             </div>
+              <div className="border-t pt-6">
+              <h3 className="font-medium mb-4">Billing Address</h3>
+              <div className="space-y-3">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    id="same"
+                    name="billingAddress"
+                    value="same"
+                    checked={billingAddress === "same"}
+                    onChange={() => setBillingAddress("same")}
+                    className="h-4 w-4 text-black focus:ring-gray-500 border-gray-300"
+                  />
+                  <label htmlFor="same" className="font-normal cursor-pointer">
+                    Same as shipping address
+                  </label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    id="different"
+                    name="billingAddress"
+                    value="different"
+                    checked={billingAddress === "different"}
+                    onChange={() => setBillingAddress("different")}
+                    className="h-4 w-4 text-black focus:ring-gray-500 border-gray-300"
+                  />
+                  <label htmlFor="different" className="font-normal cursor-pointer">
+                    Use a different billing address
+                  </label>
+                </div>
+              </div>
+            </div>
 
             <div className="pt-4">
               <h3 className="font-medium mb-3">Shipping Method</h3>
@@ -512,7 +725,11 @@ export default function CheckoutPage() {
 
       case "payment":
         return (
-          <form onSubmit={handlePaymentSubmit} className="space-y-6">
+          <form 
+            onSubmit={handlePaymentSubmit} 
+            className="space-y-6"
+            id="payment-form"
+          >
             <div className="mb-6">
               <h3 className="font-medium mb-3">Payment Method</h3>
               <div className="w-full">
@@ -576,44 +793,49 @@ export default function CheckoutPage() {
                 </div>
                 <div className="pt-4">
                   {activeTab === "credit" && (
-                    <div className="space-y-4 ">
-                        <div className="text-center p-6 border rounded-md">
-                      <p className="mb-4">
-                        You'll be redirected to complete your purchase
-                        securely.
-                      </p>
-                      <form
-                        action="/api/checkout_sessions"
-                        method="POST"
-                        className="justify-self-center"
-                      >
-                        {/* Hidden fields with order data */}
-                        <input type="hidden" name="amount" value={total} />
-                        <input
-                          type="hidden"
-                          name="shippingInfo"
-                          value={JSON.stringify(shippingInfo)}
-                        />
-                        <input
-                          type="hidden"
-                          name="cart"
-                          value={JSON.stringify(cart)}
-                        />
-                        <input
-                          type="hidden"
-                          name="shippingMethod"
-                          value={shippingMethod}
-                        />
-
-                        <button
-                          type="submit"
-                          className="justify-center items-center  bg-black text-white py-2 px-4 rounded-md hover:bg-gray-800 transition-colors"
-                        >
-                          Checkout 
-                        </button>
-                      </form>
-                    </div>
-                     
+                    <div className="space-y-4">
+                      <div className="text-center p-6 border rounded-md">
+                        <p className="mb-4">
+                          You'll be redirected to complete your purchase
+                          securely.
+                        </p>
+                        <div className="justify-self-center">
+                          <button
+                            type="submit"
+                            form="payment-form"
+                            className="justify-center items-center bg-black text-white py-2 px-4 rounded-md hover:bg-gray-800 transition-colors w-full"
+                            disabled={isProcessing}
+                          >
+                            {isProcessing ? (
+                              <span className="flex items-center justify-center">
+                                <svg
+                                  className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <circle
+                                    className="opacity-25"
+                                    cx="12"
+                                    cy="12"
+                                    r="10"
+                                    stroke="currentColor"
+                                    strokeWidth="4"
+                                  ></circle>
+                                  <path
+                                    className="opacity-75"
+                                    fill="currentColor"
+                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                  ></path>
+                                </svg>
+                                Processing...
+                              </span>
+                            ) : (
+                              'Checkout with Stripe'
+                            )}
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   )}
                   {activeTab === "paypal" && (
@@ -697,41 +919,12 @@ export default function CheckoutPage() {
               </div>
             </div>
 
-            <button
-              type="submit"
-              className="w-full bg-black text-white py-2 px-4 rounded-md hover:bg-gray-800 transition-colors"
-              disabled={isProcessing}
-            >
-              {isProcessing ? (
-                <span className="flex items-center justify-center">
-                  <svg
-                    className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
-                  Processing...
-                </span>
-              ) : isCOD ? (
-                `Place Order (COD) - $${total.toFixed(2)} USD`
-              ) : (
-                `Pay $${total.toFixed(2)} USD`
-              )}
-            </button>
+            <CartDisplay 
+              cart={cart}
+              updateQuantity={updateQuantity}
+              setQuantity={setQuantity}
+              removeItem={removeItem}
+            />
           </form>
         );
 
@@ -796,6 +989,15 @@ export default function CheckoutPage() {
               </div>
             )}
 
+            {activeStep === "shipping" && (
+              <CartDisplay 
+                cart={cart}
+                updateQuantity={updateQuantity}
+                setQuantity={setQuantity}
+                removeItem={removeItem}
+              />
+            )}
+
             {renderCheckoutStep()}
           </div>
 
@@ -803,61 +1005,8 @@ export default function CheckoutPage() {
             {!isComplete && (
               <div className="bg-gray-50 p-6 rounded-lg sticky top-6">
                 <h2 className="text-xl font-bold mb-4">Order Summary</h2>
-                <div className="border-t pt-6">
-              <h3 className="font-bold mb-4 ">Order Review</h3>
-              <div className="space-y-4">
-                {cart.map((item) => (
-                  <div key={item.id} className="flex items-center py-2">
-                    <div className="w-16 h-16 relative flex-shrink-0 bg-gray-100 rounded-md overflow-hidden">
-                      <Image
-                        src={item.image || "/placeholder.svg?height=64&width=64"}
-                        alt={item.name}
-                        fill
-                        className="object-cover object-center"
-                      />
-                    </div>
-                    <div className="ml-4 flex-grow">
-                      <h4 className="font-medium">{item.name}</h4>
-                      <p className="text-sm text-gray-600">Qty: {item.quantity}</p>
-                    </div>
-                    <div className="ml-4 font-semibold">${(item.price * item.quantity).toFixed(2)}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="border-t pt-6">
-              <h3 className="font-medium mb-4">Billing Address</h3>
-              <div className="space-y-3">
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="radio"
-                    id="same"
-                    name="billingAddress"
-                    value="same"
-                    checked={billingAddress === "same"}
-                    onChange={() => setBillingAddress("same")}
-                    className="h-4 w-4 text-black focus:ring-gray-500 border-gray-300"
-                  />
-                  <label htmlFor="same" className="font-normal cursor-pointer">
-                    Same as shipping address
-                  </label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="radio"
-                    id="different"
-                    name="billingAddress"
-                    value="different"
-                    checked={billingAddress === "different"}
-                    onChange={() => setBillingAddress("different")}
-                    className="h-4 w-4 text-black focus:ring-gray-500 border-gray-300"
-                  />
-                  <label htmlFor="different" className="font-normal cursor-pointer">
-                    Use a different billing address
-                  </label>
-                </div>
-              </div>
-            </div>
+                
+          
 
                 <div className="space-y-2 mb-4">
                   <div className="flex justify-between">
@@ -882,63 +1031,13 @@ export default function CheckoutPage() {
                   </div>
                 </div>
 
-                {activeStep === "shipping" && (
-                  <div className="mt-6 space-y-4">
-                    <h3 className="font-medium text-sm">Your Cart ({cart.length})</h3>
-                    <div className="max-h-60 overflow-y-auto space-y-3">
-                      {cart.map((item) => (
-                        <div key={item.id} className="flex items-center py-2 border-b">
-                          <div className="w-12 h-12 relative flex-shrink-0 bg-gray-100 rounded-md overflow-hidden">
-                            <Image
-                              src={item.image || "/placeholder.svg?height=48&width=48"}
-                              alt={item.name}
-                              fill
-                              className="object-cover object-center"
-                            />
-                          </div>
-                          <div className="ml-3 flex-grow">
-                            <h4 className="text-sm font-medium">{item.name}</h4>
-                            <div className="flex items-center mt-1">
-                              <button
-                                className="w-6 h-6 flex items-center justify-center border rounded-md text-sm bg-white hover:bg-gray-200"
-                                onClick={() => {
-                                  const newQty = Math.max(1, item.quantity - 1);
-                                  updateQuantity(item.id, newQty);
-                                  setQuantity(item.id, newQty);
-                                }}
-                                aria-label="Decrease quantity"
-                              >
-                                -
-                              </button>
-                              <span className="mx-2 text-sm">{item.quantity}</span>
-                              <button
-                                className="w-6 h-6 flex items-center justify-center border rounded-md text-sm bg-white hover:bg-gray-200"
-                                onClick={() => {
-                                  const newQty = item.quantity + 1;
-                                  updateQuantity(item.id, newQty);
-                                  setQuantity(item.id, newQty);
-                                }}
-                                aria-label="Increase quantity"
-                              >
-                                +
-                              </button>
-                              <button
-                                className="ml-3 text-gray-400 hover:text-red-500"
-                                onClick={() => {
-                                  removeItem(item.id);
-                                  setQuantity(item.id, 1); // O podrías eliminar la key del store
-                                }}
-                                aria-label="Remove item"
-                              >
-                                <Trash2 className="h-5 w-5" />
-                              </button>
-                            </div>
-                          </div>
-                          <div className="ml-2 text-sm">${(item.price * item.quantity).toFixed(2)}</div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                {activeStep === "shipping" &&   (
+                  <CartDisplay 
+                    cart={cart}
+                    updateQuantity={updateQuantity}
+                    setQuantity={setQuantity}
+                    removeItem={removeItem}
+                  />
                 )}
               </div>
             )}
