@@ -7,7 +7,7 @@
 
 Modern e-commerce platform built with cutting-edge web technologies for optimal performance and user experience.
 
-![The Quick Shop Preview](https://via.placeholder.com/800x400.png?text=The+Quick+Shop+Screenshot)
+![The Quick Shop Preview](https://thequickshop.vercel.app/)
 
 ## 🚀 Features
 
