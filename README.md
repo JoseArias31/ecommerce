@@ -50,7 +50,7 @@ Modern e-commerce platform built with cutting-edge web technologies for optimal 
 ### Installation
 ```bash
 # Clone repository
-git clone https://github.com/your-username/the-quick-shop.git
+git clone https://github.com/JoseArias31/ecommerce.git
 
 # Install dependencies
 pnpm install
