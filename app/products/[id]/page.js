@@ -18,6 +18,8 @@ export default function ProductPage({ params }) {
   const [zoomPosition, setZoomPosition] = useState({ x: 0, y: 0 })
   const [recentlyViewed, setRecentlyViewed] = useState([])
   const [productImages, setProductImages] = useState([])
+  const [recentlyViewedImages, setRecentlyViewedImages] = useState({})
+  const [relatedProductImages, setRelatedProductImages] = useState({})
   const quantity = useQuantityStore((state) => state.quantities[product?.id] || 1)
   const setQuantity = useQuantityStore((state) => state.setQuantity)
 
@@ -43,7 +45,21 @@ export default function ProductPage({ params }) {
       // Fetch related products
       const { data: relData, error: relError } = await supabase.from("products").select("*").neq("id", id).limit(4);
       if (relError) console.error("Error fetching related products:", relError);
-      else setRelatedProducts(relData);
+      else {
+        setRelatedProducts(relData);
+        // Fetch images for related products
+        const { data: relImages, error: relImgError } = await supabase
+          .from("productimages")
+          .select("product_id, url")
+          .in("product_id", relData.map(p => p.id));
+        if (!relImgError && relImages) {
+          const imgMap = {};
+          relImages.forEach(img => {
+            if (!imgMap[img.product_id]) imgMap[img.product_id] = img.url;
+          });
+          setRelatedProductImages(imgMap);
+        }
+      }
       setLoading(false);
     };
     fetchData();
@@ -63,8 +79,39 @@ export default function ProductPage({ params }) {
       const updatedProducts = [product, ...storedProducts].slice(0, 4)
       localStorage.setItem("recentlyViewed", JSON.stringify(updatedProducts))
       setRecentlyViewed(updatedProducts.filter((p) => p.id !== product.id))
+      
+      // Fetch images for recently viewed products
+      const fetchRecentImages = async () => {
+        const { data: recentImages, error } = await supabase
+          .from("productimages")
+          .select("product_id, url")
+          .in("product_id", updatedProducts.filter(p => p.id !== product.id).map(p => p.id));
+        if (!error && recentImages) {
+          const imgMap = {};
+          recentImages.forEach(img => {
+            if (!imgMap[img.product_id]) imgMap[img.product_id] = img.url;
+          });
+          setRecentlyViewedImages(imgMap);
+        }
+      };
+      fetchRecentImages();
     } else {
       setRecentlyViewed(storedProducts.filter((p) => p.id !== product.id))
+      // Fetch images for recently viewed products
+      const fetchRecentImages = async () => {
+        const { data: recentImages, error } = await supabase
+          .from("productimages")
+          .select("product_id, url")
+          .in("product_id", storedProducts.filter(p => p.id !== product.id).map(p => p.id));
+        if (!error && recentImages) {
+          const imgMap = {};
+          recentImages.forEach(img => {
+            if (!imgMap[img.product_id]) imgMap[img.product_id] = img.url;
+          });
+          setRecentlyViewedImages(imgMap);
+        }
+      };
+      fetchRecentImages();
     }
   }, [product])
 
@@ -342,7 +389,7 @@ export default function ProductPage({ params }) {
               <Link href={`/products/${viewedProduct.id}`} key={viewedProduct.id} className="group">
                 <div className="aspect-square relative rounded-lg overflow-hidden bg-gray-100 mb-2">
                   <Image
-                    src={viewedProduct.image || "/placeholder.svg"}
+                    src={recentlyViewedImages[viewedProduct.id] || "/placeholder.svg"}
                     alt={viewedProduct.name}
                     fill
                     className="object-cover object-center group-hover:scale-105 transition-transform duration-300"
@@ -364,7 +411,7 @@ export default function ProductPage({ params }) {
             <Link href={`/products/${relatedProduct.id}`} key={relatedProduct.id} className="group">
               <div className="aspect-square relative rounded-lg overflow-hidden bg-gray-100 mb-2">
                 <Image
-                  src={relatedProduct.image || "/placeholder.svg"}
+                  src={relatedProductImages[relatedProduct.id] || "/placeholder.svg"}
                   alt={relatedProduct.name}
                   fill
                   className="object-cover object-center group-hover:scale-105 transition-transform duration-300"
