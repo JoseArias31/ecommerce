@@ -117,15 +117,15 @@ export default function RootLayout({ children }) {
         />
         <div className="flex flex-col min-h-screen">
           <nav className="border-b sticky top-0 z-50 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/60 transition-shadow">
-            <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-              <Link href="/" className="relative group flex flex-row">
+            <div className="container mx-auto px-4 py-2 flex justify-between items-center">
+              <Link href="/" className="relative group flex flex-row items-center">
                 <div className="relative z-10">
-                  <h1 className="text-4xl font-bold text-black">
+                  <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-black">
                     The Quick Shop
                   </h1>
-                  <p className="text-sm text-gray-600 text-center -mt-1">Shop Quick, Ship Quicker</p>
+                  <p className="text-xs sm:text-sm text-gray-600 text-center -mt-1">Shop Quick, Ship Quicker</p>
                 </div>
-                <div className=" w-16 h-16  group-hover:opacity-60 ">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 group-hover:opacity-60 transition-all duration-300 group-hover:rotate-12">
                   <Image 
                     src="/logoecommerce.png" 
                     alt="Logo" 
@@ -139,17 +139,17 @@ export default function RootLayout({ children }) {
               {/* Mobile menu button */}
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="lg:hidden text-black"
+                className="lg:hidden text-black p-1"
               >
                 {isMobileMenuOpen ? (
-                  <X className="h-6 w-6" />
+                  <X className="h-5 w-5 sm:h-6 sm:w-6" />
                 ) : (
-                  <Menu className="h-6 w-6" />
+                  <Menu className="h-5 w-5 sm:h-6 sm:w-6" />
                 )}
               </button>
 
               {/* Desktop navigation */}
-              <div className="hidden lg:flex items-center space-x-4">
+              <div className="hidden lg:flex items-center space-x-6">
                 <Link href="/checkout" className="text-black">
                   <div className="p-2 relative">
                     <svg
@@ -167,7 +167,7 @@ export default function RootLayout({ children }) {
                       <circle cx="19" cy="21" r="1"></circle>
                       <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"></path>
                     </svg>
-                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center ">
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
                       {cartCount}
                     </span>
                   </div>
@@ -175,7 +175,6 @@ export default function RootLayout({ children }) {
                 
                 {session ? (
                   user ? (
-                    // Show user profile dropdown when both session and user exist
                     <div className="flex items-center gap-2">
                       <button 
                         onClick={handleSignOut}
@@ -199,21 +198,19 @@ export default function RootLayout({ children }) {
                         <span className="text-sm">Sign Out</span>
                       </button>
                       <Link href={'/settings'}>
-                      <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
-                        {user?.username?.charAt(0).toUpperCase() || 
-                         user?.email?.charAt(0).toUpperCase() || 
-                         'U'}
-                      </div>
+                        <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
+                          {user?.username?.charAt(0).toUpperCase() || 
+                           user?.email?.charAt(0).toUpperCase() || 
+                           'U'}
+                        </div>
                       </Link>
                     </div>
                   ) : (
-                    // Show loading state when session exists but user data is loading
                     <div className="p-2">
                       <div className="w-5 h-5 border-2 border-gray-400 border-t-black rounded-full animate-spin"></div>
                     </div>
                   )
                 ) : (
-                  // Show login button when no session exists
                   <Link href="/login" className="text-black">
                     <div className="relative p-2">
                       <svg
@@ -240,124 +237,184 @@ export default function RootLayout({ children }) {
                 )}
               </div>
             </div>
-          </nav>
 
-          {/* Mobile menu */}
-          <div
-            className={`${
-              isMobileMenuOpen ? 'block' : 'hidden'
-            } lg:hidden absolute top-[90px] left-0 right-0 bg-white border-t p-4 z-40`}
-          >
-            <div className="flex flex-col space-y-2">
-              <Link
-                href="/checkout"
-                className="flex items-center p-2 text-black"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5 mr-2"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
-                  />
-                </svg>
-                Checkout
-                <span className=" bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center ml-2">
+            {/* Mobile menu */}
+            <div
+              className={`lg:hidden absolute top-full left-0 right-0 bg-white border-b shadow-lg transition-all duration-300 ease-in-out ${
+                isMobileMenuOpen ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2 pointer-events-none"
+              }`}
+            >
+              <div className="container mx-auto px-4 py-2">
+                <div className="flex flex-col space-y-1">
+                  <Link
+                    href="/checkout"
+                    className="flex items-center p-2 text-black text-sm"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-4 w-4 mr-2"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
+                      />
+                    </svg>
+                    Checkout
+                    <span className="bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center ml-2">
                       {cartCount}
                     </span>
-              </Link>
-
-              {user?.status === 'active' && (
-                <Link
-                  href="/settings"
-                  className="flex items-center p-2 text-black"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5 mr-2"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-                    />
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                    />
-                  </svg>
-                  Settings
-                </Link>
-              )}
-
-              {user?.status === 'admin' && (
-                <>
-                  <Link
-                    href="/settings"
-                    className="flex items-center p-2 text-black"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5 mr-2"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-                      />
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                      />
-                    </svg>
-                    Settings
                   </Link>
-                  <Link
-                    href="/admin"
-                    className="flex items-center p-2 text-black"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5 mr-2"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
+
+                  {user?.status === 'active' && (
+                    <Link
+                      href="/settings"
+                      className="flex items-center p-2 text-black text-sm"
+                      onClick={() => setIsMobileMenuOpen(false)}
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                      />
-                    </svg>
-                    Admin
-                  </Link>
-                </>
-              )}
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-4 w-4 mr-2"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                        />
+                      </svg>
+                      Settings
+                    </Link>
+                  )}
+
+                  {user?.status === 'admin' && (
+                    <>
+                      <Link
+                        href="/settings"
+                        className="flex items-center p-2 text-black text-sm"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-4 w-4 mr-2"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                          />
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                          />
+                        </svg>
+                        Settings
+                      </Link>
+                      <Link
+                        href="/admin"
+                        className="flex items-center p-2 text-black text-sm"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-4 w-4 mr-2"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                          />
+                        </svg>
+                        Admin
+                      </Link>
+                    </>
+                  )}
+
+                  {session && (
+                    <button
+                      onClick={() => {
+                        handleSignOut();
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="flex items-center p-2 text-black w-full text-left text-sm"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-4 w-4 mr-2"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                        />
+                      </svg>
+                      Sign Out
+                    </button>
+                  )}
+
+                  {!session && (
+                    <Link
+                      href="/login"
+                      className="flex items-center p-2 text-black text-sm"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-4 w-4 mr-2"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"
+                        />
+                        <circle cx="12" cy="7" r="4" />
+                      </svg>
+                      <div className="flex items-center">
+                        Sign In
+                        <div className="ml-2 flex items-center animate-bounce">
+                          <span className="bg-blue-500 text-white text-xs rounded-full px-1 drop-shadow">
+                            Hey!
+                          </span>
+                        </div>
+                      </div>
+                    </Link>
+                  )}
+                </div>
+              </div>
             </div>
-          </div>
+          </nav>
           {children}
           <Footer />
         </div>

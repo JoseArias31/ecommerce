@@ -292,22 +292,22 @@ export default function Home() {
             </Link>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6">
             {featuredProducts.map((product) => (
               <div
                 key={product.id}
-                className="group relative flex flex-col bg-white/80 backdrop-blur-md rounded-2xl overflow-hidden shadow-lg border border-gray-100 hover:shadow-xl hover:-translate-y-1 hover:border-indigo-200 transition-all duration-300 h-full"
+                className="group relative flex flex-col bg-white/80 backdrop-blur-md rounded-xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-md hover:-translate-y-1 hover:border-indigo-200 transition-all duration-300 h-full"
               >
                 {/* BADGE: Example for new products */}
                 {product.isNew && (
-                  <span className="absolute top-2 left-2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg z-20 animate-pulse">
+                  <span className="absolute top-2 left-2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-[10px] sm:text-xs font-bold px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full shadow-lg z-20 animate-pulse">
                     New
                   </span>
                 )}
                 <div className="relative">
                   <Link
                     href={`/products/${product.id}`}
-                    className="block overflow-hidden rounded-t-2xl"
+                    className="block overflow-hidden rounded-t-xl"
                   >
                     <Image
                       src={
@@ -318,60 +318,58 @@ export default function Home() {
                       alt={product.name}
                       width={400}
                       height={400}
-                      className="object-cover object-center w-full h-48 sm:h-56 transition-transform duration-700 group-hover:scale-110 group-hover:rotate-1"
+                      className="object-cover object-center w-full h-40 sm:h-48 md:h-56 transition-transform duration-700 group-hover:scale-110 group-hover:rotate-1"
                     />
                   </Link>
                   <div className="absolute top-2 right-2 flex flex-col gap-2 z-10">
-                    <button className="p-1.5 bg-white/80 rounded-full shadow-md hover:bg-indigo-50 transition-colors duration-300 group active:scale-90">
-                      <Heart className="h-4 w-4 text-pink-500 group-hover:fill-pink-100 transition-all" />
+                    <button className="p-1 sm:p-1.5 bg-white/80 rounded-full shadow-md hover:bg-indigo-50 transition-colors duration-300 group active:scale-90">
+                      <Heart className="h-3 w-3 sm:h-4 sm:w-4 text-pink-500 group-hover:fill-pink-100 transition-all" />
                     </button>
                   </div>
-                  <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none rounded-b-2xl"></div>
                 </div>
-                <div className="flex-1 flex flex-col p-3 sm:p-4 gap-2">
+                <div className="flex-1 flex flex-col p-2 sm:p-3 md:p-4 gap-1 sm:gap-2">
                   <Link href={`/products/${product.id}`}>
-                    <h3 className="text-base sm:text-lg font-bold mb-1 group-hover:text-indigo-700 transition-colors duration-300 truncate">
+                    <h3 className="text-sm sm:text-base md:text-lg font-bold mb-0.5 sm:mb-1 group-hover:text-indigo-700 transition-colors duration-300 truncate">
                       {product.name}
                     </h3>
                   </Link>
                   {/* Star rating */}
-                  <div className="flex items-center gap-1 mb-1">
+                  <div className="flex items-center gap-0.5 sm:gap-1 mb-0.5 sm:mb-1">
                     {[...Array(5)].map((_, i) => (
                       <Star
                         key={i}
-                        className={`h-3 w-3 sm:h-4 sm:w-4 ${
+                        className={`h-2.5 w-2.5 sm:h-3 sm:w-3 md:h-4 md:w-4 ${
                           i < Math.round(productRatings[product.id]?.average || 0)
                             ? "text-yellow-400"
                             : "text-gray-200"
                         }`}
                       />
                     ))}
-                    <span className="text-xs text-gray-500 ml-1">
+                    <span className="text-[10px] sm:text-xs text-gray-500 ml-0.5 sm:ml-1">
                       {productRatings[product.id]?.average || 0} ({productRatings[product.id]?.count || 0})
                     </span>
                   </div>
-                  <p className="text-gray-500 text-xs sm:text-sm mb-2 line-clamp-2">
+                  <p className="text-[10px] sm:text-xs md:text-sm text-gray-500 mb-1 sm:mb-2 line-clamp-2">
                     {product.description}
                   </p>
-                  <div className="mt-auto flex flex-col gap-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-lg sm:text-xl font-extrabold text-gray-900 drop-shadow-sm">
-                        ${product.price}
-                      </span>
-                      <span className="text-xs px-1.5 py-0.5 rounded-full bg-green-50 text-green-700 font-semibold border border-green-100">
-                        In Stock
-                      </span>
-                    </div>
-                    <AddToCartButton
-                      product={product}
-                      quantity={
-                        Number.isFinite(getQuantity(product.id))
-                          ? getQuantity(product.id)
-                          : 1
-                      }
-                      className="w-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-sm font-bold py-2 rounded-lg shadow-md hover:from-indigo-600 hover:to-purple-600 hover:scale-105 active:scale-95 transition-all duration-200"
-                    />
+                  
+                  <div className="flex items-center justify-between mt-auto">
+                    <span className="text-base sm:text-lg md:text-xl font-extrabold text-gray-900 drop-shadow-sm">
+                      ${product.price}
+                    </span>
+                    <span className="text-[8px] sm:text-xs px-1 sm:px-1.5 py-0.5 rounded-full bg-green-50 text-green-700 font-semibold border border-green-100">
+                      In Stock
+                    </span>
                   </div>
+                  <AddToCartButton
+                    product={product}
+                    quantity={
+                      Number.isFinite(getQuantity(product.id))
+                        ? getQuantity(product.id)
+                        : 1
+                    }
+                    className="w-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-[10px] sm:text-sm font-bold py-1 sm:py-2 rounded-lg shadow-md hover:from-indigo-600 hover:to-purple-600 hover:scale-105 active:scale-95 transition-all duration-200 mt-1 sm:mt-2"
+                  />
                 </div>
               </div>
             ))}

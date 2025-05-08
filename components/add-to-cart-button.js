@@ -64,7 +64,7 @@ export default function AddToCartButton({ product }) {
           onClick={handleAddToCart}
         >
           <ShoppingCart className="h-4 w-4" />
-          Add to Cart
+          Add
         </button>
       </div>
       {showCheckout && (
