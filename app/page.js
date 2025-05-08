@@ -17,6 +17,7 @@ export default function Home() {
   const [categories, setCategories] = useState(["all"])
   const { getQuantity, setQuantity } = useQuantityStore()
   const [cartCount, setCartCount] = useState(0);
+  const [productRatings, setProductRatings] = useState({});
 
   useEffect(() => {
     // Function to sum all quantities in the cart
@@ -115,6 +116,35 @@ export default function Home() {
   }, [allProducts.length]);
 
   const heroProduct = allProducts.length ? allProducts[randomHeroIndex] : null;
+
+  // Fetch ratings for all products
+  useEffect(() => {
+    const fetchRatings = async () => {
+      const { data: reviews, error } = await supabase
+        .from('product_reviews')
+        .select('product_id, rating');
+      if (!error && reviews) {
+        // Group reviews by product_id
+        const grouped = {};
+        reviews.forEach(r => {
+          if (!grouped[r.product_id]) grouped[r.product_id] = [];
+          grouped[r.product_id].push(r.rating);
+        });
+        // Calculate average and count for each product
+        const ratings = {};
+        Object.entries(grouped).forEach(([productId, ratingsArr]) => {
+          const count = ratingsArr.length;
+          const avg = count > 0 ? ratingsArr.reduce((sum, r) => sum + (r || 0), 0) / count : 0;
+          ratings[productId] = {
+            average: Math.round(avg * 10) / 10,
+            count,
+          };
+        });
+        setProductRatings(ratings);
+      }
+    };
+    fetchRatings();
+  }, [allProducts]);
 
   if (!isMounted) {
     return null
@@ -309,12 +339,15 @@ export default function Home() {
                       <Star
                         key={i}
                         className={`h-4 w-4 ${
-                          i < (product.rating || 4)
+                          i < Math.round(productRatings[product.id]?.average || 0)
                             ? "text-yellow-400"
                             : "text-gray-200"
                         }`}
                       />
                     ))}
+                    <span className="text-xs text-gray-500 ml-1">
+                      {productRatings[product.id]?.average || 0} ({productRatings[product.id]?.count || 0})
+                    </span>
                   </div>
                   <p className="text-gray-500 text-sm mb-4 line-clamp-2">
                     {product.description}

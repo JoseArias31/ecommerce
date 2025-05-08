@@ -18,6 +18,7 @@ export default function ProductsPage() {
   const [productImages, setProductImages] = useState({});
   const [showFilter, setShowFilter] = useState(false);
   const { getQuantity } = useQuantityStore();
+  const [productRatings, setProductRatings] = useState({});
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -42,6 +43,35 @@ export default function ProductsPage() {
     fetchCategories();
     fetchImages();
   }, []);
+
+  // Fetch ratings for all products
+  useEffect(() => {
+    const fetchRatings = async () => {
+      const { data: reviews, error } = await supabase
+        .from('product_reviews')
+        .select('product_id, rating');
+      if (!error && reviews) {
+        // Group reviews by product_id
+        const grouped = {};
+        reviews.forEach(r => {
+          if (!grouped[r.product_id]) grouped[r.product_id] = [];
+          grouped[r.product_id].push(r.rating);
+        });
+        // Calculate average and count for each product
+        const ratings = {};
+        Object.entries(grouped).forEach(([productId, ratingsArr]) => {
+          const count = ratingsArr.length;
+          const avg = count > 0 ? ratingsArr.reduce((sum, r) => sum + (r || 0), 0) / count : 0;
+          ratings[productId] = {
+            average: Math.round(avg * 10) / 10,
+            count,
+          };
+        });
+        setProductRatings(ratings);
+      }
+    };
+    fetchRatings();
+  }, [products]);
 
   const filtered = products.filter((p) =>
     (activeCategory === "all" || p.categories?.name === activeCategory) &&
@@ -166,14 +196,14 @@ export default function ProductsPage() {
                       <Star
                         key={i}
                         className={`h-3 w-3 ${
-                          i < (product.rating || 4)
+                          i < Math.round(productRatings[product.id]?.average || 0)
                             ? "text-yellow-400 fill-yellow-400"
                             : "text-gray-200"
                         }`}
                       />
                     ))}
                     <span className="text-xs text-gray-500 ml-1">
-                      {product.rating || 4}.0
+                      {productRatings[product.id]?.average || 0} ({productRatings[product.id]?.count || 0})
                     </span>
                   </div>
 

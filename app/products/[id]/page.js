@@ -274,6 +274,11 @@ export default function ProductPage({ params }) {
     setShowReviewForm(true);
   }
 
+  // Calculate average rating and review count
+  const reviewCount = reviews.length;
+  const averageRating = reviewCount > 0 ? (reviews.reduce((sum, r) => sum + (r.rating || 0), 0) / reviewCount) : 0;
+  const roundedRating = Math.round(averageRating * 10) / 10;
+
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-12 text-center">
@@ -399,10 +404,10 @@ export default function ProductPage({ params }) {
           <div className="flex items-center mt-2">
             <div className="flex text-yellow-400">
               {[...Array(5)].map((_, i) => (
-                <Star key={i} className={`h-5 w-5 ${i < 4 ? "fill-current" : ""}`} />
+                <Star key={i} className={`h-5 w-5 ${i < Math.round(averageRating) ? "fill-current" : ""}`} />
               ))}
             </div>
-            <span className="ml-2 text-sm text-gray-600">4.0 (24 reviews)</span>
+            <span className="ml-2 text-sm text-gray-600">{roundedRating} ({reviewCount} review{reviewCount === 1 ? '' : 's'})</span>
           </div>
 
           {/* Price */}
