@@ -17,8 +17,11 @@ export default function Home() {
   const [filteredProducts, setFilteredProducts] = useState([])
   const [categories, setCategories] = useState(["all"])
   const { getQuantity, setQuantity } = useQuantityStore()
-  const [cartCount, setCartCount] = useState(0);
-  const [productRatings, setProductRatings] = useState({});
+  const [cartCount, setCartCount] = useState(0)
+  const [productRatings, setProductRatings] = useState({})
+  // Add newsletter states
+  const [email, setEmail] = useState('')
+  const [subscribeStatus, setSubscribeStatus] = useState('idle')
 
   useEffect(() => {
     // Function to sum all quantities in the cart
@@ -146,6 +149,34 @@ export default function Home() {
     };
     fetchRatings();
   }, [allProducts]);
+
+  // Add newsletter submit handler
+  const handleNewsletterSubmit = async (e) => {
+    e.preventDefault()
+    if (!email) return
+
+    setSubscribeStatus('loading')
+
+    try {
+      const res = await fetch('/api/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to subscribe')
+      }
+
+      setSubscribeStatus('success')
+      setEmail('')
+    } catch (err) {
+      console.error('Newsletter subscription error:', err)
+      setSubscribeStatus('error')
+    }
+  }
 
   if (!isMounted) {
     return null
@@ -434,19 +465,35 @@ export default function Home() {
               Subscribe to get special offers, free giveaways, and
               once-in-a-lifetime deals delivered to your inbox.
             </p>
-            <div className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
+            <form onSubmit={handleNewsletterSubmit} className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
               <input
                 type="email"
                 placeholder="Your email address"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 className="flex-grow px-6 py-4 rounded-full text-black focus:outline-none focus:ring-2 focus:ring-white/20 transition-all duration-300"
+                required
+                disabled={subscribeStatus === 'loading'}
               />
-              <button className="group relative overflow-hidden bg-white text-[#2a4365] px-8 py-4 rounded-full font-medium transition-all duration-300 hover:shadow-lg hover:shadow-black/10">
+              <button
+                type="submit"
+                className="group relative overflow-hidden bg-white text-[#2a4365] px-8 py-4 rounded-full font-medium transition-all duration-300 hover:shadow-lg hover:shadow-black/10 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={subscribeStatus === 'loading'}
+              >
                 <span className="relative z-10 flex items-center gap-2">
-                  Subscribe
+                  {subscribeStatus === 'loading' ? 'Submitting...' : 'Subscribe'}
                   <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
                 </span>
               </button>
-            </div>
+            </form>
+
+            {/* Status messages */}
+            {subscribeStatus === 'success' && (
+              <p className="text-green-300 mt-4">You've been subscribed successfully!</p>
+            )}
+            {subscribeStatus === 'error' && (
+              <p className="text-red-300 mt-4">There was an error. Please try again.</p>
+            )}
           </div>
         </div>
       </section>

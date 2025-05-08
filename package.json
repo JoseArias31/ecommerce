@@ -60,6 +60,7 @@
     "react-resizable-panels": "^2.1.7",
     "recharts": "2.15.0",
     "resend": "^4.5.0",
+    "sib-api-v3-typescript": "^2.2.2",
     "sonner": "^1.7.1",
     "stripe": "^18.1.0",
     "tailwind-merge": "^2.5.5",
