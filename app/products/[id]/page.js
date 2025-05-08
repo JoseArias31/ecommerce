@@ -20,6 +20,11 @@ export default function ProductPage({ params }) {
   const [productImages, setProductImages] = useState([])
   const [recentlyViewedImages, setRecentlyViewedImages] = useState({})
   const [relatedProductImages, setRelatedProductImages] = useState({})
+  const [reviews, setReviews] = useState([])
+  const [user, setUser] = useState(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [newReview, setNewReview] = useState({ rating: 5, title: '', comment: '' })
+  const [editingReview, setEditingReview] = useState(null)
   const quantity = useQuantityStore((state) => state.quantities[product?.id] || 1)
   const setQuantity = useQuantityStore((state) => state.setQuantity)
 
@@ -63,6 +68,32 @@ export default function ProductPage({ params }) {
       setLoading(false);
     };
     fetchData();
+  }, [id]);
+
+  // Fetch user session
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        setUser(session.user);
+      }
+    };
+    fetchUser();
+  }, []);
+
+  // Fetch reviews (no join)
+  useEffect(() => {
+    const fetchReviews = async () => {
+      const { data, error } = await supabase
+        .from('product_reviews')
+        .select('*')
+        .eq('product_id', id)
+        .order('created_at', { ascending: false });
+      if (!error && data) {
+        setReviews(data);
+      }
+    };
+    fetchReviews();
   }, [id]);
 
   const galleryImages = productImages.length > 0 ? productImages.map(img => img.url) : ["/placeholder.svg"];
@@ -121,6 +152,108 @@ export default function ProductPage({ params }) {
     const x = ((e.clientX - left) / width) * 100
     const y = ((e.clientY - top) / height) * 100
     setZoomPosition({ x, y })
+  }
+
+  const handleReviewSubmit = async (e) => {
+    e.preventDefault()
+    if (!user) {
+      alert('Please sign in to leave a review')
+      return
+    }
+
+    setIsSubmitting(true)
+    try {
+      if (editingReview) {
+        // Update existing review
+        const { error } = await supabase
+          .from('product_reviews')
+          .update({
+            rating: newReview.rating,
+            title: newReview.title,
+            comment: newReview.comment,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', editingReview.id)
+          .eq('user_id', user.id)
+
+        if (error) throw error
+      } else {
+        // Create new review
+        const { error } = await supabase
+          .from('product_reviews')
+          .insert([{
+            product_id: id,
+            user_id: user.id,
+            rating: newReview.rating,
+            title: newReview.title,
+            comment: newReview.comment
+          }])
+
+        if (error) throw error
+      }
+
+      // Refresh reviews
+      const { data, error } = await supabase
+        .from('product_reviews')
+        .select('*')
+        .eq('product_id', id)
+        .order('created_at', { ascending: false })
+
+      if (!error && data) {
+        setReviews(data)
+      }
+
+      // Reset form
+      setNewReview({ rating: 5, title: '', comment: '' })
+      setEditingReview(null)
+    } catch (error) {
+      console.error('Error submitting review:', error)
+      alert('Error submitting review. Please try again.')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleDeleteReview = async (reviewId) => {
+    if (!user) return
+
+    try {
+      const { error } = await supabase
+        .from('product_reviews')
+        .delete()
+        .eq('id', reviewId)
+        .eq('user_id', user.id)
+
+      if (error) throw error
+
+      // Refresh reviews
+      const { data, error: fetchError } = await supabase
+        .from('product_reviews')
+        .select('*')
+        .eq('product_id', id)
+        .order('created_at', { ascending: false })
+
+      if (!fetchError && data) {
+        setReviews(data)
+      }
+    } catch (error) {
+      console.error('Error deleting review:', error)
+      alert('Error deleting review. Please try again.')
+    }
+  }
+
+  const handleEditReview = (review) => {
+    setEditingReview(review)
+    setNewReview({
+      rating: review.rating,
+      title: review.title || '',
+      comment: review.comment
+    })
+  }
+
+  const handleCancelEdit = () => {
+    setEditingReview(null)
+    setNewReview({ rating: 5, title: '', comment: '' })
   }
 
   if (loading) {
@@ -344,40 +477,142 @@ export default function ProductPage({ params }) {
       <div className="mt-16">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold">Customer Reviews</h2>
-          <button className="px-4 py-2 border border-black rounded-md hover:bg-black hover:text-white transition-colors">
-            Write a Review
-          </button>
+          {user && !editingReview && (
+            <button
+              onClick={() => setNewReview({ rating: 5, title: '', comment: '' })}
+              className="px-4 py-2 border border-black rounded-md hover:bg-black hover:text-white transition-colors"
+            >
+              Write a Review
+            </button>
+          )}
         </div>
 
-        {/* Sample Reviews */}
-        <div className="space-y-6">
-          {[1, 2].map((review) => (
-            <div key={review} className="border-b pb-6">
-              <div className="flex justify-between">
-                <div>
-                  <div className="flex text-yellow-400 mb-1">
-                    {[...Array(5)].map((_, i) => (
-                      <Star key={i} className={`h-4 w-4 ${i < 5 ? "fill-current" : ""}`} />
-                    ))}
-                  </div>
-                  <h3 className="font-medium">Great product, highly recommend!</h3>
+        {/* Review Form */}
+        {(editingReview || (user && !editingReview)) && (
+          <form onSubmit={handleReviewSubmit} className="mb-8 p-6 border rounded-lg bg-gray-50">
+            <h3 className="text-lg font-medium mb-4">
+              {editingReview ? 'Edit Review' : 'Write a Review'}
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Rating</label>
+                <div className="flex gap-1">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() => setNewReview(prev => ({ ...prev, rating: star }))}
+                      className="text-2xl"
+                    >
+                      <Star
+                        className={`h-6 w-6 ${
+                          star <= newReview.rating
+                            ? 'text-yellow-400 fill-current'
+                            : 'text-gray-300'
+                        }`}
+                      />
+                    </button>
+                  ))}
                 </div>
-                <span className="text-sm text-gray-500">2 weeks ago</span>
               </div>
-              <p className="mt-2 text-gray-600">
-                This product exceeded my expectations. The quality is excellent and it looks even better in person.
-                Would definitely purchase again.
-              </p>
-              <div className="mt-2 text-sm text-gray-500">
-                <span>John D. - Verified Buyer</span>
+              <div>
+                <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1" required>
+                  Title 
+                </label>
+                <input
+                  type="text"
+                  id="title"
+                  value={newReview.title}
+                  onChange={(e) => setNewReview(prev => ({ ...prev, title: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
+                  placeholder="Summarize your experience"
+                />
+              </div>
+              <div>
+                <label htmlFor="comment" className="block text-sm font-medium text-gray-700 mb-1" required>
+                  Review
+                </label>
+                <textarea
+                  id="comment"
+                  value={newReview.comment}
+                  onChange={(e) => setNewReview(prev => ({ ...prev, comment: e.target.value }))}
+                  required
+                  rows={4}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
+                  placeholder="Share your experience with this product"
+                />
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="px-4 py-2 bg-black text-white rounded-md hover:bg-gray-800 transition-colors disabled:opacity-50"
+                >
+                  {isSubmitting ? 'Submitting...' : editingReview ? 'Update Review' : 'Submit Review'}
+                </button>
+                {editingReview && (
+                  <button
+                    type="button"
+                    onClick={handleCancelEdit}
+                    className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                )}
               </div>
             </div>
-          ))}
-        </div>
+          </form>
+        )}
 
-        <button className="mt-6 w-full py-2 border border-gray-300 rounded-md text-center hover:bg-gray-50 transition-colors">
-          Load More Reviews
-        </button>
+        {/* Reviews List */}
+        <div className="space-y-6">
+          {reviews.length === 0 ? (
+            <p className="text-gray-500 text-center py-8">No reviews yet. Be the first to review this product!</p>
+          ) : (
+            reviews.map((review) => (
+              <div key={review.id} className="border-b pb-6">
+                <div className="flex justify-between">
+                  <div>
+                    <div className="flex text-yellow-400 mb-1">
+                      {[...Array(5)].map((_, i) => (
+                        <Star
+                          key={i}
+                          className={`h-4 w-4 ${i < review.rating ? 'fill-current' : ''}`}
+                        />
+                      ))}
+                    </div>
+                    <h3 className="font-medium">{review.title || 'Great product!'}</h3>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-500">
+                      {new Date(review.created_at).toLocaleDateString()}
+                    </span>
+                    {user && review.user_id === user.id && (
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleEditReview(review)}
+                          className="text-sm text-blue-600 hover:text-blue-800"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteReview(review.id)}
+                          className="text-sm text-red-600 hover:text-red-800"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <p className="mt-2 text-gray-600">{review.comment}</p>
+                <div className="mt-2 text-sm text-gray-500">
+                  <span>{review.user_id.slice(0, 8)}... - Verified Buyer</span>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
       </div>
 
       {/* Recently Viewed */}
