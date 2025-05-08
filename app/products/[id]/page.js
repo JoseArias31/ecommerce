@@ -25,6 +25,7 @@ export default function ProductPage({ params }) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [newReview, setNewReview] = useState({ rating: 5, title: '', comment: '' })
   const [editingReview, setEditingReview] = useState(null)
+  const [showReviewForm, setShowReviewForm] = useState(false)
   const quantity = useQuantityStore((state) => state.quantities[product?.id] || 1)
   const setQuantity = useQuantityStore((state) => state.setQuantity)
 
@@ -163,6 +164,16 @@ export default function ProductPage({ params }) {
 
     setIsSubmitting(true)
     try {
+      // Fetch user details from users table
+      const { data: userData } = await supabase
+        .from("users")
+        .select("*")
+        .eq("id", user.id)
+        .single();
+      const reviewerName = userData?.name && userData.name.trim() !== ''
+        ? userData.name
+        : (userData?.email?.split('@')[0] || 'User');
+
       if (editingReview) {
         // Update existing review
         const { error } = await supabase
@@ -171,11 +182,11 @@ export default function ProductPage({ params }) {
             rating: newReview.rating,
             title: newReview.title,
             comment: newReview.comment,
+            reviewer_name: reviewerName,
             updated_at: new Date().toISOString()
           })
           .eq('id', editingReview.id)
           .eq('user_id', user.id)
-
         if (error) throw error
       } else {
         // Create new review
@@ -186,9 +197,9 @@ export default function ProductPage({ params }) {
             user_id: user.id,
             rating: newReview.rating,
             title: newReview.title,
-            comment: newReview.comment
+            comment: newReview.comment,
+            reviewer_name: reviewerName
           }])
-
         if (error) throw error
       }
 
@@ -198,7 +209,6 @@ export default function ProductPage({ params }) {
         .select('*')
         .eq('product_id', id)
         .order('created_at', { ascending: false })
-
       if (!error && data) {
         setReviews(data)
       }
@@ -249,11 +259,19 @@ export default function ProductPage({ params }) {
       title: review.title || '',
       comment: review.comment
     })
+    setShowReviewForm(true);
   }
 
   const handleCancelEdit = () => {
     setEditingReview(null)
     setNewReview({ rating: 5, title: '', comment: '' })
+    setShowReviewForm(false);
+  }
+
+  const handleWriteReviewClick = () => {
+    setEditingReview(null);
+    setNewReview({ rating: 5, title: '', comment: '' });
+    setShowReviewForm(true);
   }
 
   if (loading) {
@@ -479,7 +497,7 @@ export default function ProductPage({ params }) {
           <h2 className="text-2xl font-bold">Customer Reviews</h2>
           {user && !editingReview && (
             <button
-              onClick={() => setNewReview({ rating: 5, title: '', comment: '' })}
+              onClick={handleWriteReviewClick}
               className="px-4 py-2 border border-black rounded-md hover:bg-black hover:text-white transition-colors"
             >
               Write a Review
@@ -488,7 +506,7 @@ export default function ProductPage({ params }) {
         </div>
 
         {/* Review Form */}
-        {(editingReview || (user && !editingReview)) && (
+        {(editingReview || (user && showReviewForm)) && (
           <form onSubmit={handleReviewSubmit} className="mb-8 p-6 border rounded-lg bg-gray-50">
             <h3 className="text-lg font-medium mb-4">
               {editingReview ? 'Edit Review' : 'Write a Review'}
@@ -526,6 +544,7 @@ export default function ProductPage({ params }) {
                   onChange={(e) => setNewReview(prev => ({ ...prev, title: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
                   placeholder="Summarize your experience"
+                  required
                 />
               </div>
               <div>
@@ -551,6 +570,15 @@ export default function ProductPage({ params }) {
                   {isSubmitting ? 'Submitting...' : editingReview ? 'Update Review' : 'Submit Review'}
                 </button>
                 {editingReview && (
+                  <button
+                    type="button"
+                    onClick={handleCancelEdit}
+                    className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                )}
+                {!editingReview && (
                   <button
                     type="button"
                     onClick={handleCancelEdit}
@@ -607,7 +635,7 @@ export default function ProductPage({ params }) {
                 </div>
                 <p className="mt-2 text-gray-600">{review.comment}</p>
                 <div className="mt-2 text-sm text-gray-500">
-                  <span>{review.user_id.slice(0, 8)}... - Verified Buyer</span>
+                  <span>{review.reviewer_name || 'User'} </span>
                 </div>
               </div>
             ))
