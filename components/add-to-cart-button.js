@@ -1,14 +1,26 @@
+"use client"
+
 import { useEffect, useState } from "react"
 import { ShoppingCart } from "lucide-react"
 import Link from "next/link"
 import { useQuantityStore } from "../store/quantityStore"
+import { supabase } from "@/lib/supabaseClient"
 
 export default function AddToCartButton({ product }) {
   const quantity = useQuantityStore((state) => state.quantities[product.id] || 1)
   const setQuantity = useQuantityStore((state) => state.setQuantity)
   const [showCheckout, setShowCheckout] = useState(false)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [showAuthPrompt, setShowAuthPrompt] = useState(false)
 
-  useEffect(() => {}, []) // Ya no es necesario guardar en localStorage aquí
+  useEffect(() => {
+    // Check authentication status
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      setIsAuthenticated(!!session)
+    }
+    checkAuth()
+  }, [])
 
   const handleAddToCart = () => {
     const existingCart = JSON.parse(localStorage.getItem('cart')) || []
@@ -17,7 +29,6 @@ export default function AddToCartButton({ product }) {
     if (existingProductIndex !== -1) {
       existingCart[existingProductIndex].quantity += quantity
     } else {
-      // Use the first image from product.images if available, otherwise fall back to product.image
       const productImage = product.images?.[0]?.url || product.image || '/placeholder.svg'
       
       existingCart.push({
@@ -30,9 +41,15 @@ export default function AddToCartButton({ product }) {
     }
 
     localStorage.setItem('cart', JSON.stringify(existingCart))
-    window.dispatchEvent(new Event('cartUpdated')) // Actualiza el badge en tiempo real
+    window.dispatchEvent(new Event('cartUpdated'))
     setShowCheckout(true)
-    // Elimina el temporizador para dejar el botón fijo
+  }
+
+  const handleCheckoutClick = (e) => {
+    if (!isAuthenticated) {
+      e.preventDefault()
+      setShowAuthPrompt(true)
+    }
   }
 
   return (
@@ -68,9 +85,36 @@ export default function AddToCartButton({ product }) {
         </button>
       </div>
       {showCheckout && (
-        <Link href="/checkout" className="block mt-2 px-2.5 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded text-center font-semibold text-xs transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-purple-300 focus:ring-offset-2 active:scale-95 shadow-sm">
+        <Link 
+          href="/checkout" 
+          onClick={handleCheckoutClick}
+          className="block mt-2 px-2.5 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded text-center font-semibold text-xs transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-purple-300 focus:ring-offset-2 active:scale-95 shadow-sm"
+        >
           Go to Checkout
         </Link>
+      )}
+      {showAuthPrompt && (
+        <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+          <p className="text-sm text-yellow-800 mb-2">
+            Sign in to get a better shopping experience and track your orders
+          </p>
+          <div className="flex gap-2">
+            <Link
+              href="/login"
+              className="flex-1 px-3 py-1.5 bg-yellow-500 hover:bg-yellow-600 text-white text-xs font-medium rounded text-center transition-colors"
+              onClick={() => setShowAuthPrompt(false)}
+            >
+              Sign In
+            </Link>
+            <Link
+              href="/checkout"
+              className="px-3 py-1.5 text-yellow-800 text-xs font-medium hover:text-yellow-900"
+              onClick={() => setShowAuthPrompt(false)}
+            >
+              Continue as Guest
+            </Link>
+          </div>
+        </div>
       )}
     </div>
   )

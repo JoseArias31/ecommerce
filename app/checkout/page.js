@@ -90,6 +90,7 @@ function CartDisplay({ cart, updateQuantity, setQuantity, removeItem }) {
 }
 
 export default function CheckoutPage() {
+  const router = useRouter()
   const [cart, setCart] = useState([])
   const [activeStep, setActiveStep] = useState("shipping")
   const [shippingInfo, setShippingInfo] = useState({
@@ -110,8 +111,10 @@ export default function CheckoutPage() {
   const [isComplete, setIsComplete] = useState(false)
   const [activeTab, setActiveTab] = useState("credit")
   const [billingAddress, setBillingAddress] = useState("same")
-  const [paymentStatus, setPaymentStatus] = useState("pending"); // For COD orders
-  const [order, setOrder] = useState(null);
+  const [paymentStatus, setPaymentStatus] = useState("pending")
+  const [order, setOrder] = useState(null)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [showAuthPrompt, setShowAuthPrompt] = useState(false)
   const setQuantity = useQuantityStore((state) => state.setQuantity)
 
   // Load cart from localStorage on mount
@@ -120,6 +123,28 @@ export default function CheckoutPage() {
       const storedCart = JSON.parse(localStorage.getItem("cart")) || []
       setCart(storedCart)
     }
+  }, [])
+
+  // Check authentication status on mount
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      setIsAuthenticated(!!session)
+      if (!session) {
+        setShowAuthPrompt(true)
+      }
+    }
+    checkAuth()
+
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN') {
+        setIsAuthenticated(true)
+        setShowAuthPrompt(false)
+      }
+    })
+
+    return () => subscription.unsubscribe()
   }, [])
 
   // Helper to sync cart state and localStorage + badge
@@ -159,12 +184,13 @@ export default function CheckoutPage() {
     const { data: { session }, error: sessionError } = await supabase.auth.getSession()
     
     if (sessionError || !session) {
-      alert('Please sign in to complete your purchase')
+      // Show a modal or redirect to login with return URL
+      const returnUrl = encodeURIComponent(window.location.href)
+      window.location.href = `/login?returnUrl=${returnUrl}`
       return
     }
     
     if (paymentMethod === 'credit') {
-      // Handle Stripe checkout
       setIsProcessing(true)
       try {
         // Create order first
@@ -935,114 +961,158 @@ export default function CheckoutPage() {
 
   return (
     <div className="container mx-auto px-4 py-12">
-      <Link href="/" className="inline-flex items-center text-sm mb-8 hover:underline">
-        <ArrowLeft className="h-4 w-4 mr-1" />
-        Continue shopping
-      </Link>
+      {showAuthPrompt ? (
+        <div className="min-h-[80vh] flex items-center justify-center px-4">
+          <div className="max-w-md w-full bg-white p-8 rounded-xl shadow-lg border border-gray-100">
+            <div className="text-center mb-8">
+              <div className="w-16 h-16 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                <ShoppingBag className="h-8 w-8 text-indigo-600" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Welcome to Checkout</h2>
+              <p className="text-gray-600">
+                Sign in to get a better shopping experience
+              </p>
+            </div>
 
-      <h1 className="text-3xl font-bold mb-8">Checkout</h1>
+            <div className="space-y-4">
+              <Link
+                href="/login"
+                className="block w-full px-4 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors font-medium text-sm flex items-center justify-center gap-2"
+                onClick={() => setShowAuthPrompt(false)}
+              >
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M15 3H19C19.5304 3 20.0391 3.21071 20.4142 3.58579C20.7893 3.96086 21 4.46957 21 5V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M10 17L15 12L10 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M15 12H3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                Sign In to Your Account
+              </Link>
+              <button
+                onClick={() => setShowAuthPrompt(false)}
+                className="block w-full px-4 py-3 text-gray-700 hover:text-gray-900 transition-colors font-medium text-sm flex items-center justify-center gap-2 border border-gray-200 rounded-lg hover:bg-gray-50"
+              >
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M12 8V16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M8 12H16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                Continue as Guest
+              </button>
+            </div>
 
-      {cart.length === 0 && !isComplete ? (
-        <div className="text-center py-12">
-          <p className="text-xl mb-4">Your cart is empty</p>
-          <Link href="/">
-            <button className="bg-black text-white px-6 py-2 rounded-md hover:bg-gray-800 transition-colors">
-              Browse Products
-            </button>
-          </Link>
+            <div className="mt-8 pt-6 border-t border-gray-100">
+              <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M12 16V12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M12 8H12.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                <span>Your cart items will be saved</span>
+              </div>
+            </div>
+          </div>
         </div>
       ) : (
-        <div className="flex flex-col-reverse lg:grid lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2">
-            {!isComplete && (
-              <div className="mb-8">
-                <div className="flex items-center mb-6">
-                  <div
-                    className={`flex items-center justify-center w-8 h-8 rounded-full ${
-                      activeStep === "shipping" ? "bg-black text-white" : "bg-gray-200 text-gray-700"
-                    } mr-2`}
-                  >
-                    <MapPin className="h-4 w-4" />
+        <>
+          <Link href="/" className="inline-flex items-center text-sm mb-8 hover:underline">
+            <ArrowLeft className="h-4 w-4 mr-1" />
+            Continue shopping
+          </Link>
+
+          <h1 className="text-3xl font-bold mb-8">Checkout</h1>
+
+          {cart.length === 0 && !isComplete ? (
+            <div className="text-center py-12">
+              <p className="text-xl mb-4">Your cart is empty</p>
+              <Link href="/">
+                <button className="bg-black text-white px-6 py-2 rounded-md hover:bg-gray-800 transition-colors">
+                  Browse Products
+                </button>
+              </Link>
+            </div>
+          ) : (
+            <div className="flex flex-col-reverse lg:grid lg:grid-cols-3 gap-8">
+              <div className="lg:col-span-2">
+                {!isComplete && (
+                  <div className="mb-8">
+                    <div className="flex items-center mb-6">
+                      <div
+                        className={`flex items-center justify-center w-8 h-8 rounded-full ${
+                          activeStep === "shipping" ? "bg-black text-white" : "bg-gray-200 text-gray-700"
+                        } mr-2`}
+                      >
+                        <MapPin className="h-4 w-4" />
+                      </div>
+                      <div className="flex-grow h-0.5 bg-gray-200 mx-2"></div>
+                      <div
+                        className={`flex items-center justify-center w-8 h-8 rounded-full ${
+                          activeStep === "payment" ? "bg-black text-white" : "bg-gray-200 text-gray-700"
+                        } mr-2`}
+                      >
+                        <CreditCard className="h-4 w-4" />
+                      </div>
+                      <div className="flex-grow h-0.5 bg-gray-200 mx-2"></div>
+                      <div
+                        className={`flex items-center justify-center w-8 h-8 rounded-full ${
+                          activeStep === "confirmation" ? "bg-black text-white" : "bg-gray-200 text-gray-700"
+                        }`}
+                      >
+                        <Check className="h-4 w-4" />
+                      </div>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className={activeStep === "shipping" ? "font-medium" : ""}>Shipping</span>
+                      <span className={activeStep === "payment" ? "font-medium" : ""}>Payment</span>
+                      <span className={activeStep === "confirmation" ? "font-medium" : ""}>Confirmation</span>
+                    </div>
                   </div>
-                  <div className="flex-grow h-0.5 bg-gray-200 mx-2"></div>
-                  <div
-                    className={`flex items-center justify-center w-8 h-8 rounded-full ${
-                      activeStep === "payment" ? "bg-black text-white" : "bg-gray-200 text-gray-700"
-                    } mr-2`}
-                  >
-                    <CreditCard className="h-4 w-4" />
-                  </div>
-                  <div className="flex-grow h-0.5 bg-gray-200 mx-2"></div>
-                  <div
-                    className={`flex items-center justify-center w-8 h-8 rounded-full ${
-                      activeStep === "confirmation" ? "bg-black text-white" : "bg-gray-200 text-gray-700"
-                    }`}
-                  >
-                    <Check className="h-4 w-4" />
-                  </div>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className={activeStep === "shipping" ? "font-medium" : ""}>Shipping</span>
-                  <span className={activeStep === "payment" ? "font-medium" : ""}>Payment</span>
-                  <span className={activeStep === "confirmation" ? "font-medium" : ""}>Confirmation</span>
-                </div>
+                )}
+
+                {renderCheckoutStep()}
               </div>
-            )}
 
-            {activeStep === "shipping" && (
-              <CartDisplay 
-                cart={cart}
-                updateQuantity={updateQuantity}
-                setQuantity={setQuantity}
-                removeItem={removeItem}
-              />
-            )}
+              <div className="lg:col-span-1">
+                {!isComplete && (
+                  <div className="bg-gray-50 p-6 rounded-lg sticky top-6">
+                    <h2 className="text-xl font-bold mb-4">Order Summary</h2>
+                    
+                    <div className="space-y-2 mb-4">
+                      <div className="flex justify-between">
+                        <span>Subtotal</span>
+                        <span>${subtotal.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Shipping</span>
+                        <span>${shipping.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Taxes</span>
+                        <span>${taxes.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>COD Fee</span>
+                        <span>{codFee ? `$${codFee.toFixed(2)}` : "-"}</span>
+                      </div>
+                      <div className="border-t pt-2 mt-2 flex justify-between font-bold">
+                        <span>Total</span>
+                        <span>${total.toFixed(2)}</span>
+                      </div>
+                    </div>
 
-            {renderCheckoutStep()}
-          </div>
-
-          <div className="lg:col-span-1">
-            {!isComplete && (
-              <div className="bg-gray-50 p-6 rounded-lg sticky top-6">
-                <h2 className="text-xl font-bold mb-4">Order Summary</h2>
-                
-          
-
-                <div className="space-y-2 mb-4">
-                  <div className="flex justify-between">
-                    <span>Subtotal</span>
-                    <span>${subtotal.toFixed(2)}</span>
+                    {activeStep === "shipping" && (
+                      <CartDisplay 
+                        cart={cart}
+                        updateQuantity={updateQuantity}
+                        setQuantity={setQuantity}
+                        removeItem={removeItem}
+                      />
+                    )}
                   </div>
-                  <div className="flex justify-between">
-                    <span>Shipping</span>
-                    <span>${shipping.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Taxes</span>
-                    <span>${taxes.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>COD Fee</span>
-                    <span>{codFee ? `$${codFee.toFixed(2)}` : "-"}</span>
-                  </div>
-                  <div className="border-t pt-2 mt-2 flex justify-between font-bold">
-                    <span>Total</span>
-                    <span>${total.toFixed(2)}</span>
-                  </div>
-                </div>
-
-                {activeStep === "shipping" &&   (
-                  <CartDisplay 
-                    cart={cart}
-                    updateQuantity={updateQuantity}
-                    setQuantity={setQuantity}
-                    removeItem={removeItem}
-                  />
                 )}
               </div>
-            )}
-          </div>
-        </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   )
