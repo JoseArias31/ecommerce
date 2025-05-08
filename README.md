@@ -13,6 +13,7 @@ Modern e-commerce platform built with cutting-edge web technologies for optimal 
 - **Instant Search** with Supabase-powered queries
 - **Secure Payments** with Stripe integration
 - **Email Notifications** using Resend
+- **Sharable Links** using Web Share API
 - **Social Auth** + Email/Password authentication
 - **Real-time Inventory Updates**
 - **Responsive Design** with Tailwind CSS
