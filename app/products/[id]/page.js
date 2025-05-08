@@ -315,10 +315,10 @@ export default function ProductPage({ params }) {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
         {/* Product Images Section */}
-        <div className="space-y-4">
+        <div className="space-y-4 justify-items-center ">
           {/* Main image with zoom effect */}
           <div
-            className="aspect-square relative rounded-lg overflow-hidden bg-gray-100 cursor-zoom-in"
+            className="aspect-square relative rounded-lg overflow-hidden bg-gray-100 cursor-zoom-in w-[60%]"
             onMouseEnter={() => setIsZoomed(true)}
             onMouseLeave={() => setIsZoomed(false)}
             onMouseMove={handleImageHover}
