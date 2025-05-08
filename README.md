@@ -7,8 +7,6 @@
 
 Modern e-commerce platform built with cutting-edge web technologies for optimal performance and user experience.
 
-![The Quick Shop Preview](https://thequickshop.vercel.app/)
-
 ## 🚀 Features
 
 - **Next.js 13+** with App Router for SSR/ISR
