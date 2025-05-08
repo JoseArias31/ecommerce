@@ -4,7 +4,7 @@ import { useEffect, useState, use } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { supabase } from "@/lib/supabaseClient"
-import { ArrowLeft, Heart, Share2, Truck, ShieldCheck, RotateCcw, Star, ChevronRight, ChevronLeft, X } from "lucide-react"
+import { ArrowLeft, Heart, Share2, Truck, ShieldCheck, RotateCcw, Star, ChevronRight, ChevronLeft, X, Check } from "lucide-react"
 import AddToCartButton from "@/components/add-to-cart-button"
 import { useQuantityStore } from "@/store/quantityStore"
 
@@ -29,6 +29,7 @@ export default function ProductPage({ params }) {
   const [showReviewForm, setShowReviewForm] = useState(false)
   const quantity = useQuantityStore((state) => state.quantities[product?.id] || 1)
   const setQuantity = useQuantityStore((state) => state.setQuantity)
+  const [showShareSuccess, setShowShareSuccess] = useState(false)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -290,6 +291,38 @@ export default function ProductPage({ params }) {
     document.body.style.overflow = 'auto' // Re-enable scrolling
   }
 
+  const handleShare = async () => {
+    const productUrl = window.location.href
+    const shareData = {
+      title: product.name,
+      text: `Check out this ${product.name} on our store!`,
+      url: productUrl
+    }
+
+    try {
+      // Try to use Web Share API if available (mostly on mobile devices)
+      if (navigator.share) {
+        await navigator.share(shareData)
+      } else {
+        // Fallback for desktop: copy to clipboard
+        await navigator.clipboard.writeText(productUrl)
+        setShowShareSuccess(true)
+        setTimeout(() => setShowShareSuccess(false), 2000)
+      }
+    } catch (error) {
+      console.error('Error sharing:', error)
+      // Fallback to clipboard if Web Share API fails
+      try {
+        await navigator.clipboard.writeText(productUrl)
+        setShowShareSuccess(true)
+        setTimeout(() => setShowShareSuccess(false), 2000)
+      } catch (clipboardError) {
+        console.error('Error copying to clipboard:', clipboardError)
+        alert('Failed to share. Please try copying the URL manually.')
+      }
+    }
+  }
+
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-12 text-center">
@@ -379,10 +412,23 @@ export default function ProductPage({ params }) {
                 <Heart className="h-5 w-5 text-gray-700" />
               </button>
               <button
-                className="bg-white p-2 rounded-full shadow-md hover:bg-gray-100 transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleShare()
+                }}
+                className="bg-white p-2 rounded-full shadow-md hover:bg-gray-100 transition-colors relative"
                 aria-label="Share product"
               >
-                <Share2 className="h-5 w-5 text-gray-700" />
+                {showShareSuccess ? (
+                  <Check className="h-5 w-5 text-green-600" />
+                ) : (
+                  <Share2 className="h-5 w-5 text-gray-700" />
+                )}
+                {showShareSuccess && (
+                  <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-black text-white text-xs py-1 px-2 rounded whitespace-nowrap">
+                    Link copied!
+                  </div>
+                )}
               </button>
             </div>
           </div>
