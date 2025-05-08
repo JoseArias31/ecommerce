@@ -21,6 +21,7 @@ export default function Home() {
   const [productRatings, setProductRatings] = useState({})
   // Add newsletter states
   const [email, setEmail] = useState('')
+  const [name, setName] = useState('')
   const [subscribeStatus, setSubscribeStatus] = useState('idle')
 
   useEffect(() => {
@@ -161,7 +162,7 @@ export default function Home() {
       const res = await fetch('/api/subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, name }),
       })
 
       const data = await res.json()
@@ -172,6 +173,7 @@ export default function Home() {
 
       setSubscribeStatus('success')
       setEmail('')
+      setName('')
     } catch (err) {
       console.error('Newsletter subscription error:', err)
       setSubscribeStatus('error')
@@ -465,16 +467,26 @@ export default function Home() {
               Subscribe to get special offers, free giveaways, and
               once-in-a-lifetime deals delivered to your inbox.
             </p>
-            <form onSubmit={handleNewsletterSubmit} className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
-              <input
-                type="email"
-                placeholder="Your email address"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="flex-grow px-6 py-4 rounded-full text-black focus:outline-none focus:ring-2 focus:ring-white/20 transition-all duration-300"
-                required
-                disabled={subscribeStatus === 'loading'}
-              />
+            <form onSubmit={handleNewsletterSubmit} className="flex flex-col gap-3 max-w-md mx-auto">
+              <div className="flex flex-col sm:flex-row gap-3">
+                <input
+                  type="text"
+                  placeholder="Name (optional)"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className=" flex-grow px-6 py-4 rounded-full text-black focus:outline-none focus:ring-2 focus:ring-white/20 transition-all duration-300 sm:w-1/3"
+                  disabled={subscribeStatus === 'loading'}
+                />
+                <input
+                  type="email"
+                  placeholder="Email address"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="flex-grow px-6 py-4 rounded-full text-black focus:outline-none focus:ring-2 focus:ring-white/20 transition-all duration-300"
+                  required
+                  disabled={subscribeStatus === 'loading'}
+                />
+              </div>
               <button
                 type="submit"
                 className="group relative overflow-hidden bg-white text-[#2a4365] px-8 py-4 rounded-full font-medium transition-all duration-300 hover:shadow-lg hover:shadow-black/10 disabled:opacity-50 disabled:cursor-not-allowed"

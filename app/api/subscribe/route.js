@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 
 export async function POST(request) {
   try {
-    const { email } = await request.json();
+    const { email, name } = await request.json();
 
     if (!email) {
       return NextResponse.json(
@@ -21,6 +21,7 @@ export async function POST(request) {
       },
       body: JSON.stringify({
         email: email,
+        attributes: name ? { FIRSTNAME: name } : undefined,
         listIds: [2], // Replace with your actual list ID
         updateEnabled: true
       })
