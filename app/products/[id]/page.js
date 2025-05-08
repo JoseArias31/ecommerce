@@ -4,7 +4,7 @@ import { useEffect, useState, use } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { supabase } from "@/lib/supabaseClient"
-import { ArrowLeft, Heart, Share2, Truck, ShieldCheck, RotateCcw, Star, ChevronRight, ChevronLeft } from "lucide-react"
+import { ArrowLeft, Heart, Share2, Truck, ShieldCheck, RotateCcw, Star, ChevronRight, ChevronLeft, X } from "lucide-react"
 import AddToCartButton from "@/components/add-to-cart-button"
 import { useQuantityStore } from "@/store/quantityStore"
 
@@ -16,6 +16,7 @@ export default function ProductPage({ params }) {
   const [selectedImage, setSelectedImage] = useState(0)
   const [isZoomed, setIsZoomed] = useState(false)
   const [zoomPosition, setZoomPosition] = useState({ x: 0, y: 0 })
+  const [isGalleryOpen, setIsGalleryOpen] = useState(false)
   const [recentlyViewed, setRecentlyViewed] = useState([])
   const [productImages, setProductImages] = useState([])
   const [recentlyViewedImages, setRecentlyViewedImages] = useState({})
@@ -279,6 +280,16 @@ export default function ProductPage({ params }) {
   const averageRating = reviewCount > 0 ? (reviews.reduce((sum, r) => sum + (r.rating || 0), 0) / reviewCount) : 0;
   const roundedRating = Math.round(averageRating * 10) / 10;
 
+  const handleGalleryOpen = () => {
+    setIsGalleryOpen(true)
+    document.body.style.overflow = 'hidden' // Prevent scrolling when gallery is open
+  }
+
+  const handleGalleryClose = () => {
+    setIsGalleryOpen(false)
+    document.body.style.overflow = 'auto' // Re-enable scrolling
+  }
+
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-12 text-center">
@@ -322,6 +333,7 @@ export default function ProductPage({ params }) {
             onMouseEnter={() => setIsZoomed(true)}
             onMouseLeave={() => setIsZoomed(false)}
             onMouseMove={handleImageHover}
+            onClick={handleGalleryOpen}
           >
             {/* Overlayed minimal arrows */}
             {showArrows && (
@@ -380,8 +392,11 @@ export default function ProductPage({ params }) {
             {galleryImages.map((image, index) => (
               <button
                 key={index}
-                onClick={() => setSelectedImage(index)}
-                className={`relative w-20 h-20 rounded-md overflow-hidden flex-shrink-0 border-2 ${
+                onClick={() => {
+                  setSelectedImage(index)
+                  handleGalleryOpen()
+                }}
+                className={`relative w-20 h-20 rounded-md overflow-hidden flex-shrink-0 border-2 cursor-pointer ${
                   selectedImage === index ? "border-black" : "border-transparent"
                 }`}
               >
@@ -699,6 +714,82 @@ export default function ProductPage({ params }) {
           Back to all products
         </Link>
       </div>
+
+      {/* Gallery Modal */}
+      {isGalleryOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center">
+          <div className="relative w-full h-full flex items-center justify-center">
+            {/* Close button */}
+            <button
+              onClick={handleGalleryClose}
+              className="absolute top-4 right-4 text-white hover:text-gray-300 z-50"
+              aria-label="Close gallery"
+            >
+              <X className="h-8 w-8" />
+            </button>
+
+            {/* Main image */}
+            <div className="relative w-full h-full flex items-center justify-center">
+              <Image
+                src={galleryImages[selectedImage]}
+                alt={product.name}
+                fill
+                className="object-contain"
+                priority
+              />
+            </div>
+
+            {/* Navigation arrows */}
+            {showArrows && (
+              <>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handlePrev()
+                  }}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/10 hover:bg-white/20 text-white p-2 rounded-full transition-colors"
+                  aria-label="Previous image"
+                >
+                  <ChevronLeft className="h-8 w-8" />
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleNext()
+                  }}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/10 hover:bg-white/20 text-white p-2 rounded-full transition-colors"
+                  aria-label="Next image"
+                >
+                  <ChevronRight className="h-8 w-8" />
+                </button>
+              </>
+            )}
+
+            {/* Thumbnails */}
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex space-x-2 bg-black/50 p-2 rounded-lg">
+              {galleryImages.map((image, index) => (
+                <button
+                  key={index}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setSelectedImage(index)
+                  }}
+                  className={`relative w-16 h-16 rounded-md overflow-hidden flex-shrink-0 border-2 ${
+                    selectedImage === index ? "border-white" : "border-transparent"
+                  }`}
+                >
+                  <Image
+                    src={image}
+                    alt={`${product.name} - Image ${index + 1}`}
+                    fill
+                    className="object-cover object-center"
+                  />
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
