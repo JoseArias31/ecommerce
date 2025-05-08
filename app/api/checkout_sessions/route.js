@@ -5,6 +5,14 @@ import { supabase } from "../../../lib/supabaseClient"
 
 export async function POST(req) {
   try {
+    if (!process.env.STRIPE_SECRET_KEY) {
+      console.error('Stripe secret key is not configured')
+      return NextResponse.json(
+        { error: 'Payment system is not properly configured' },
+        { status: 500 }
+      )
+    }
+
     const headersList = headers()
     const origin = headersList.get('origin')
     const authHeader = headersList.get('authorization')
@@ -28,6 +36,13 @@ export async function POST(req) {
 
     const body = await req.json()
     const { cart, shippingInfo, total, shippingMethod, orderId } = body
+
+    if (!cart || !shippingInfo || !total || !orderId) {
+      return NextResponse.json(
+        { error: 'Missing required fields' },
+        { status: 400 }
+      )
+    }
 
     // Get the existing order
     const { data: order, error: orderError } = await supabase
@@ -56,42 +71,56 @@ export async function POST(req) {
         created_at: new Date().toISOString()
       }])
 
-    if (paymentError) throw paymentError
+    if (paymentError) {
+      console.error('Error creating payment record:', paymentError)
+      return NextResponse.json(
+        { error: 'Failed to create payment record' },
+        { status: 500 }
+      )
+    }
 
-    // Create Checkout Session with order ID as client_reference_id
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
-      line_items: cart.map(item => ({
-        price_data: {
-          currency: 'usd',
-          product_data: {
-            name: item.name,
-            images: [item.image],
+    try {
+      // Create Checkout Session with order ID as client_reference_id
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ['card'],
+        line_items: cart.map(item => ({
+          price_data: {
+            currency: 'usd',
+            product_data: {
+              name: item.name,
+              images: [item.image],
+            },
+            unit_amount: Math.round(item.price * 100), // Convert to cents
           },
-          unit_amount: Math.round(item.price * 100), // Convert to cents
+          quantity: item.quantity,
+        })),
+        mode: 'payment',
+        client_reference_id: order.id,
+        customer_email: shippingInfo.email,
+        shipping_address_collection: {
+          allowed_countries: ['US', 'CA', 'GB', 'AU', 'DE', 'FR', 'JP', 'BR', 'IN', 'MX'],
         },
-        quantity: item.quantity,
-      })),
-      mode: 'payment',
-      client_reference_id: order.id,
-      customer_email: shippingInfo.email,
-      shipping_address_collection: {
-        allowed_countries: ['US', 'CA', 'GB', 'AU', 'DE', 'FR', 'JP', 'BR', 'IN', 'MX'],
-      },
-      success_url: `${origin}/success?session_id={CHECKOUT_SESSION_ID}&order_id=${order.id}`,
-      cancel_url: `${origin}/checkout?cancelled=true`,
-      metadata: {
-        order_id: order.id,
-        order_number: order.order_number,
-      },
-    });
+        success_url: `${origin}/success?session_id={CHECKOUT_SESSION_ID}&order_id=${order.id}`,
+        cancel_url: `${origin}/checkout?cancelled=true`,
+        metadata: {
+          order_id: order.id,
+          order_number: order.order_number,
+        },
+      });
 
-    return NextResponse.json({ url: session.url })
+      return NextResponse.json({ url: session.url })
+    } catch (stripeError) {
+      console.error('Stripe error:', stripeError)
+      return NextResponse.json(
+        { error: stripeError.message || 'Failed to create checkout session' },
+        { status: 500 }
+      )
+    }
   } catch (err) {
-    console.error('Error creating checkout session:', err)
+    console.error('Error in checkout session creation:', err)
     return NextResponse.json(
-      { error: err.message },
-      { status: err.statusCode || 500 }
+      { error: err.message || 'Internal server error' },
+      { status: 500 }
     )
   }
 }

@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabaseClient"
 import AddToCartButton from "@/components/add-to-cart-button"
 import { ArrowRight, Star, TrendingUp, Package, Clock, Heart, ShoppingBag } from "lucide-react"
 import { useQuantityStore } from "@/store/quantityStore"
+import ReviewsCarousel from "@/components/ReviewsCarousel"
 
 export default function Home() {
   const [isMounted, setIsMounted] = useState(false)
@@ -291,22 +292,22 @@ export default function Home() {
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 md:gap-10">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
             {featuredProducts.map((product) => (
               <div
                 key={product.id}
-                className="group relative flex flex-col bg-white/80 backdrop-blur-md rounded-3xl overflow-hidden shadow-lg border border-gray-100 hover:shadow-2xl hover:-translate-y-1 hover:border-indigo-200 transition-all duration-300 h-full"
+                className="group relative flex flex-col bg-white/80 backdrop-blur-md rounded-2xl overflow-hidden shadow-lg border border-gray-100 hover:shadow-xl hover:-translate-y-1 hover:border-indigo-200 transition-all duration-300 h-full"
               >
                 {/* BADGE: Example for new products */}
                 {product.isNew && (
-                  <span className="absolute top-4 left-4 bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg z-20 animate-pulse">
+                  <span className="absolute top-2 left-2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg z-20 animate-pulse">
                     New
                   </span>
                 )}
                 <div className="relative">
                   <Link
                     href={`/products/${product.id}`}
-                    className="block overflow-hidden rounded-2xl"
+                    className="block overflow-hidden rounded-t-2xl"
                   >
                     <Image
                       src={
@@ -317,28 +318,28 @@ export default function Home() {
                       alt={product.name}
                       width={400}
                       height={400}
-                      className="object-cover object-center w-full h-72 transition-transform duration-700 group-hover:scale-110 group-hover:rotate-1"
+                      className="object-cover object-center w-full h-48 sm:h-56 transition-transform duration-700 group-hover:scale-110 group-hover:rotate-1"
                     />
                   </Link>
-                  <div className="absolute top-4 right-4 flex flex-col gap-2 z-10">
-                    <button className="p-2 bg-white/80 rounded-full shadow-md hover:bg-indigo-50 transition-colors duration-300 group active:scale-90">
-                      <Heart className="h-5 w-5 text-pink-500 group-hover:fill-pink-100 transition-all" />
+                  <div className="absolute top-2 right-2 flex flex-col gap-2 z-10">
+                    <button className="p-1.5 bg-white/80 rounded-full shadow-md hover:bg-indigo-50 transition-colors duration-300 group active:scale-90">
+                      <Heart className="h-4 w-4 text-pink-500 group-hover:fill-pink-100 transition-all" />
                     </button>
                   </div>
-                  <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none rounded-b-2xl"></div>
+                  <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none rounded-b-2xl"></div>
                 </div>
-                <div className="flex-1 flex flex-col p-6 gap-2">
+                <div className="flex-1 flex flex-col p-3 sm:p-4 gap-2">
                   <Link href={`/products/${product.id}`}>
-                    <h3 className="text-2xl font-bold mb-1 group-hover:text-indigo-700 transition-colors duration-300 truncate">
+                    <h3 className="text-base sm:text-lg font-bold mb-1 group-hover:text-indigo-700 transition-colors duration-300 truncate">
                       {product.name}
                     </h3>
                   </Link>
-                  {/* Example star rating - replace with actual rating if available */}
+                  {/* Star rating */}
                   <div className="flex items-center gap-1 mb-1">
                     {[...Array(5)].map((_, i) => (
                       <Star
                         key={i}
-                        className={`h-4 w-4 ${
+                        className={`h-3 w-3 sm:h-4 sm:w-4 ${
                           i < Math.round(productRatings[product.id]?.average || 0)
                             ? "text-yellow-400"
                             : "text-gray-200"
@@ -349,15 +350,15 @@ export default function Home() {
                       {productRatings[product.id]?.average || 0} ({productRatings[product.id]?.count || 0})
                     </span>
                   </div>
-                  <p className="text-gray-500 text-sm mb-4 line-clamp-2">
+                  <p className="text-gray-500 text-xs sm:text-sm mb-2 line-clamp-2">
                     {product.description}
                   </p>
-                  <div className="mt-auto flex flex-col gap-3">
+                  <div className="mt-auto flex flex-col gap-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-2xl font-extrabold text-gray-900 drop-shadow-sm">
+                      <span className="text-lg sm:text-xl font-extrabold text-gray-900 drop-shadow-sm">
                         ${product.price}
                       </span>
-                      <span className="text-xs px-2 py-1 rounded-full bg-green-50 text-green-700 font-semibold border border-green-100">
+                      <span className="text-xs px-1.5 py-0.5 rounded-full bg-green-50 text-green-700 font-semibold border border-green-100">
                         In Stock
                       </span>
                     </div>
@@ -368,7 +369,7 @@ export default function Home() {
                           ? getQuantity(product.id)
                           : 1
                       }
-                      className="w-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-bold py-3 rounded-xl shadow-md hover:from-indigo-600 hover:to-purple-600 hover:scale-105 active:scale-95 transition-all duration-200"
+                      className="w-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-sm font-bold py-2 rounded-lg shadow-md hover:from-indigo-600 hover:to-purple-600 hover:scale-105 active:scale-95 transition-all duration-200"
                     />
                   </div>
                 </div>
@@ -377,6 +378,8 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+            
 
       {/* Benefits Section */}
       <section className="container mx-auto px-6 py-20">
@@ -414,71 +417,12 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section className="py-20 bg-gray-50">
-        <div className="container mx-auto px-6">
-          <h2 className="text-3xl font-bold mb-12 text-center">
-            <span className="relative inline-block">
-              What Our Customers Say
-              <span className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-24 h-1 bg-[#2a4365] rounded-full"></span>
-            </span>
-          </h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
-              {
-                name: "Sarah Johnson",
-                image: "/placeholder.svg?height=100&width=100",
-                text: "I absolutely love the products from this store. The quality is exceptional and the customer service is outstanding. Will definitely be ordering again!",
-                role: "Fashion Designer",
-              },
-              {
-                name: "Michael Chen",
-                image: "/placeholder.svg?height=100&width=100",
-                text: "The attention to detail in every product I've purchased is remarkable. Fast shipping and beautiful packaging make the whole experience feel premium.",
-                role: "Tech Entrepreneur",
-              },
-              {
-                name: "Emma Rodriguez",
-                image: "/placeholder.svg?height=100&width=100",
-                text: "I've been a loyal customer for years now. Their commitment to quality and customer satisfaction is unmatched. Highly recommend to everyone!",
-                role: "Interior Designer",
-              },
-            ].map((testimonial, index) => (
-              <div
-                key={index}
-                className="bg-white p-8 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full"
-              >
-                <div className="flex text-yellow-400 mb-5">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="h-5 w-5 fill-current" />
-                  ))}
-                </div>
-                <p className="text-gray-600 mb-8 leading-relaxed flex-grow">
-                  "{testimonial.text}"
-                </p>
-                <div className="flex items-center mt-auto">
-                  <div className="w-14 h-14 bg-gray-200 rounded-full mr-4 overflow-hidden">
-                    <Image
-                      src={testimonial.image || "/placeholder.svg"}
-                      alt={testimonial.name}
-                      width={56}
-                      height={56}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <div>
-                    <p className="font-medium text-gray-900">
-                      {testimonial.name}
-                    </p>
-                    <p className="text-sm text-[#2a4365]">{testimonial.role}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+    
+           {/* Reviews Carousel Section */}
+      <section className="bg-gray-50 ">
+        <ReviewsCarousel />
       </section>
+      
 
       {/* Newsletter */}
       <section className="container mx-auto px-6 py-20">
