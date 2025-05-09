@@ -174,42 +174,56 @@ export default function RootLayout({ children }) {
                 </Link>
                 
                 {session ? (
-                  user ? (
-                    <div className="flex items-center gap-2">
-                      <button 
-                        onClick={handleSignOut}
-                        className="text-black p-2 flex items-center gap-1"
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="20"
-                          height="20"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                          <polyline points="16 17 21 12 16 7"></polyline>
-                          <line x1="21" y1="12" x2="9" y2="12"></line>
-                        </svg>
-                        <span className="text-sm">Sign Out</span>
-                      </button>
-                      <Link href={'/settings'}>
-                        <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
-                          {user?.username?.charAt(0).toUpperCase() || 
-                           user?.email?.charAt(0).toUpperCase() || 
-                           'U'}
+                  <div className="flex items-center gap-2">
+                    {user?.status === 'admin' && (
+                      <Link href="/admin" className="text-black hover:text-gray-700 transition-colors">
+                        <div className="p-2 flex items-center gap-1">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="20"
+                            height="20"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                          </svg>
+                          <span className="text-sm">Admin</span>
                         </div>
                       </Link>
-                    </div>
-                  ) : (
-                    <div className="p-2">
-                      <div className="w-5 h-5 border-2 border-gray-400 border-t-black rounded-full animate-spin"></div>
-                    </div>
-                  )
+                    )}
+                    <button 
+                      onClick={handleSignOut}
+                      className="text-black p-2 flex items-center gap-1"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                        <polyline points="16 17 21 12 16 7"></polyline>
+                        <line x1="21" y1="12" x2="9" y2="12"></line>
+                      </svg>
+                      <span className="text-sm">Sign Out</span>
+                    </button>
+                    <Link href={'/settings'}>
+                      <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
+                        {user?.username?.charAt(0).toUpperCase() || 
+                         user?.email?.charAt(0).toUpperCase() || 
+                         'U'}
+                      </div>
+                    </Link>
+                  </div>
                 ) : (
                   <Link href="/login" className="text-black text-sm hover:text-gray-700 transition-colors">
                     <div className="relative p-2">
