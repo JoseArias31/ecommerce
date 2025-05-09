@@ -188,31 +188,31 @@ export default function Home() {
   return (
     <main className="bg-white">
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-indigo-50 via-white to-purple-50 border-b border-gray-100">
+      <section className="relative overflow-hidden bg-gradient-to-br from-blue-50 via-white to-indigo-50 border-b border-gray-100">
         <div className="container mx-auto px-6 py-10 max-w-7xl">
           {/* Animated Dots Background */}
           <div className="absolute inset-0 overflow-hidden opacity-10">
-            <div className="absolute inset-0 bg-[radial-gradient(#2a4365_1px,transparent_1px)] [background-size:20px_20px]"></div>
+            <div className="absolute inset-0 bg-[radial-gradient(#1e40af_1px,transparent_1px)] [background-size:20px_20px]"></div>
           </div>
 
           {/* Floating Elements */}
-          <div className="absolute top-10 right-10 w-24 h-24 rounded-full bg-[#2a4365]/5 animate-pulse"></div>
-          <div className="absolute bottom-10 left-20 w-16 h-16 rounded-full bg-[#2a4365]/10 animate-pulse [animation-delay:1s]"></div>
-          <div className="absolute top-1/2 right-1/4 w-12 h-12 rounded-full bg-[#2a4365]/5 animate-pulse [animation-delay:2s]"></div>
+          <div className="absolute top-10 right-10 w-24 h-24 rounded-full bg-[#1e40af]/5 animate-pulse"></div>
+          <div className="absolute bottom-10 left-20 w-16 h-16 rounded-full bg-[#1e40af]/10 animate-pulse [animation-delay:1s]"></div>
+          <div className="absolute top-1/2 right-1/4 w-12 h-12 rounded-full bg-[#1e40af]/5 animate-pulse [animation-delay:2s]"></div>
 
           <div className="flex flex-col md:flex-row items-center justify-between gap-8 relative z-10">
             {/* Left Side - Text */}
             <div className="md:w-1/2 text-center md:text-left">
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-[#2a4365]/5 rounded-full text-sm font-medium text-[#2a4365] mb-6">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-[#1e40af]/5 rounded-full text-sm font-medium text-[#1e40af] mb-6">
                 <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#2a4365] opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[#2a4365]"></span>
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#1e40af] opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[#1e40af]"></span>
                 </span>
                 New Collection 2025
               </div>
 
               <h1 className="text-4xl md:text-5xl font-bold mb-4 text-gray-900 leading-tight">
-                Discover <span className="text-[#2a4365]">Exceptional</span>{" "}
+                Discover <span className="text-[#1e40af]">Exceptional</span>{" "}
                 Products
               </h1>
 
@@ -224,7 +224,7 @@ export default function Home() {
               <div className="flex flex-wrap gap-4 justify-center md:justify-start">
                 <Link
                   href="#featured"
-                  className="group relative px-6 py-3 bg-[#2a4365] text-white rounded-full font-medium overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-[#2a4365]/20"
+                  className="group relative px-6 py-3 bg-[#1e40af] text-white rounded-full font-medium overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-[#1e40af]/20"
                 >
                   <span className="relative z-10 flex items-center gap-2">
                     Explore Collection
@@ -257,7 +257,7 @@ export default function Home() {
                     fill
                     className="object-cover object-center transition-transform duration-700"
                   />
-                  <div className="absolute top-4 left-4 bg-white text-indigo-600 rounded px-2 py-1 text-xs font-semibold shadow">
+                  <div className="absolute top-4 left-4 bg-white text-blue-600 rounded px-2 py-1 text-xs font-semibold shadow">
                     20% OFF
                   </div>
                   <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-4 text-white">
@@ -283,7 +283,7 @@ export default function Home() {
                 onClick={() => setActiveCategory(category)}
                 className={`px-5 py-3 rounded-full whitespace-nowrap transition-all duration-300 ${
                   activeCategory === category
-                    ? "bg-[#2a4365] text-white shadow-md"
+                    ? "bg-[#1e40af] text-white shadow-md"
                     : "bg-gray-50 text-gray-700 hover:bg-gray-100"
                 }`}
               >
@@ -296,7 +296,7 @@ export default function Home() {
         <section className="container mx-auto px-6 ">
           <input
             type="text"
-            className="w-full md:w-1/2 px-4 py-2 rounded-full border border-gray-400 focus:ring-2 focus:ring-indigo-100 outline-none text-gray-700 bg-white shadow-sm text-base"
+            className="w-full md:w-1/2 px-4 py-2 rounded-full border border-gray-400 focus:ring-2 focus:ring-blue-100 outline-none text-gray-700 bg-white shadow-sm text-base"
             placeholder="Search products..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -313,12 +313,12 @@ export default function Home() {
             <h2 className="text-3xl font-bold text-gray-900">
               <span className="relative">
                 Featured Products
-                <span className="absolute -bottom-2 left-0 w-1/2 h-1 bg-[#2a4365] rounded-full"></span>
+                <span className="absolute -bottom-2 left-0 w-1/2 h-1 bg-[#1e40af] rounded-full"></span>
               </span>
             </h2>
             <Link
               href="/products"
-              className="mt-4 md:mt-0 text-[#2a4365] font-medium flex items-center gap-1 hover:underline"
+              className="mt-4 md:mt-0 text-[#1e40af] font-medium flex items-center gap-1 hover:underline"
             >
               View all products
               <ArrowRight className="w-4 h-4" />
@@ -329,11 +329,11 @@ export default function Home() {
             {featuredProducts.map((product) => (
               <div
                 key={product.id}
-                className="group relative flex flex-col bg-white/80 backdrop-blur-md rounded-xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-md hover:-translate-y-1 hover:border-indigo-200 transition-all duration-300 h-full"
+                className="group relative flex flex-col bg-white/80 backdrop-blur-md rounded-xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-md hover:-translate-y-1 hover:border-blue-200 transition-all duration-300 h-full"
               >
                 {/* BADGE: Example for new products */}
                 {product.isNew && (
-                  <span className="absolute top-2 left-2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-[10px] sm:text-xs font-bold px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full shadow-lg z-20 animate-pulse">
+                  <span className="absolute top-2 left-2 bg-gradient-to-r from-blue-500 to-indigo-500 text-white text-[10px] sm:text-xs font-bold px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full shadow-lg z-20 animate-pulse">
                     New
                   </span>
                 )}
@@ -355,14 +355,14 @@ export default function Home() {
                     />
                   </Link>
                   <div className="absolute top-2 right-2 flex flex-col gap-2 z-10">
-                    <button className="p-1 sm:p-1.5 bg-white/80 rounded-full shadow-md hover:bg-indigo-50 transition-colors duration-300 group active:scale-90">
-                      <Heart className="h-3 w-3 sm:h-4 sm:w-4 text-pink-500 group-hover:fill-pink-100 transition-all" />
+                    <button className="p-1 sm:p-1.5 bg-white/80 rounded-full shadow-md hover:bg-blue-50 transition-colors duration-300 group active:scale-90">
+                      <Heart className="h-3 w-3 sm:h-4 sm:w-4 text-indigo-500 group-hover:fill-indigo-100 transition-all" />
                     </button>
                   </div>
                 </div>
                 <div className="flex-1 flex flex-col p-2 sm:p-3 md:p-4 gap-1 sm:gap-2">
                   <Link href={`/products/${product.id}`}>
-                    <h3 className="text-sm sm:text-base md:text-lg font-bold mb-0.5 sm:mb-1 group-hover:text-indigo-700 transition-colors duration-300 truncate">
+                    <h3 className="text-sm sm:text-base md:text-lg font-bold mb-0.5 sm:mb-1 group-hover:text-blue-700 transition-colors duration-300 truncate">
                       {product.name}
                     </h3>
                   </Link>
@@ -390,7 +390,7 @@ export default function Home() {
                     <span className="text-base sm:text-lg md:text-xl font-extrabold text-gray-900 drop-shadow-sm">
                       ${product.price}
                     </span>
-                    <span className="text-[8px] sm:text-xs px-1 sm:px-1.5 py-0.5 rounded-full bg-green-50 text-green-700 font-semibold border border-green-100">
+                    <span className="text-[8px] sm:text-xs px-1 sm:px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-700 font-semibold border border-blue-100">
                       In Stock
                     </span>
                   </div>
@@ -401,7 +401,7 @@ export default function Home() {
                         ? getQuantity(product.id)
                         : 1
                     }
-                    className="w-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-[10px] sm:text-sm font-bold py-1 sm:py-2 rounded-lg shadow-md hover:from-indigo-600 hover:to-purple-600 hover:scale-105 active:scale-95 transition-all duration-200 mt-1 sm:mt-2"
+                    className="w-full bg-gradient-to-r from-blue-500 to-indigo-500 text-white text-[10px] sm:text-sm font-bold py-1 sm:py-2 rounded-lg shadow-md hover:from-blue-600 hover:to-indigo-600 hover:scale-105 active:scale-95 transition-all duration-200 mt-1 sm:mt-2"
                   />
                 </div>
               </div>
@@ -416,8 +416,8 @@ export default function Home() {
       <section className="container mx-auto px-6 py-20">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
           <div className="group flex flex-col items-center text-center p-8 rounded-2xl bg-white border border-gray-100 hover:border-gray-200 hover:shadow-lg transition-all duration-300">
-            <div className="bg-[#2a4365]/10 p-5 rounded-full mb-6 group-hover:bg-[#2a4365]/20 transition-colors duration-300">
-              <TrendingUp className="h-7 w-7 text-[#2a4365]" />
+            <div className="bg-[#1e40af]/10 p-5 rounded-full mb-6 group-hover:bg-[#1e40af]/20 transition-colors duration-300">
+              <TrendingUp className="h-7 w-7 text-[#1e40af]" />
             </div>
             <h3 className="font-bold text-xl mb-3">Premium Quality</h3>
             <p className="text-gray-600 leading-relaxed">
@@ -426,8 +426,8 @@ export default function Home() {
             </p>
           </div>
           <div className="group flex flex-col items-center text-center p-8 rounded-2xl bg-white border border-gray-100 hover:border-gray-200 hover:shadow-lg transition-all duration-300">
-            <div className="bg-[#2a4365]/10 p-5 rounded-full mb-6 group-hover:bg-[#2a4365]/20 transition-colors duration-300">
-              <Package className="h-7 w-7 text-[#2a4365]" />
+            <div className="bg-[#1e40af]/10 p-5 rounded-full mb-6 group-hover:bg-[#1e40af]/20 transition-colors duration-300">
+              <Package className="h-7 w-7 text-[#1e40af]" />
             </div>
             <h3 className="font-bold text-xl mb-3">Free Shipping</h3>
             <p className="text-gray-600 leading-relaxed">
@@ -436,8 +436,8 @@ export default function Home() {
             </p>
           </div>
           <div className="group flex flex-col items-center text-center p-8 rounded-2xl bg-white border border-gray-100 hover:border-gray-200 hover:shadow-lg transition-all duration-300">
-            <div className="bg-[#2a4365]/10 p-5 rounded-full mb-6 group-hover:bg-[#2a4365]/20 transition-colors duration-300">
-              <Clock className="h-7 w-7 text-[#2a4365]" />
+            <div className="bg-[#1e40af]/10 p-5 rounded-full mb-6 group-hover:bg-[#1e40af]/20 transition-colors duration-300">
+              <Clock className="h-7 w-7 text-[#1e40af]" />
             </div>
             <h3 className="font-bold text-xl mb-3">30-Day Returns</h3>
             <p className="text-gray-600 leading-relaxed">
@@ -457,7 +457,7 @@ export default function Home() {
 
       {/* Newsletter */}
       <section className="container mx-auto px-6 py-20">
-        <div className="bg-[#2a4365] text-white rounded-3xl p-10 md:p-16 overflow-hidden relative">
+        <div className="bg-[#1e40af] text-white rounded-3xl p-10 md:p-16 overflow-hidden relative">
           <div className="absolute inset-0 bg-[url('/placeholder.svg?height=600&width=1200')] bg-cover bg-center opacity-10 mix-blend-overlay"></div>
           <div className="max-w-2xl mx-auto text-center relative z-10">
             <h2 className="text-3xl md:text-4xl font-bold mb-6">
@@ -489,7 +489,7 @@ export default function Home() {
               </div>
               <button
                 type="submit"
-                className="group relative overflow-hidden bg-white text-[#2a4365] px-8 py-4 rounded-full font-medium transition-all duration-300 hover:shadow-lg hover:shadow-black/10 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="group relative overflow-hidden bg-white text-[#1e40af] px-8 py-4 rounded-full font-medium transition-all duration-300 hover:shadow-lg hover:shadow-black/10 disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={subscribeStatus === 'loading'}
               >
                 <span className="relative z-10 flex items-center gap-2">

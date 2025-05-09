@@ -123,7 +123,7 @@ export default function RootLayout({ children }) {
                   <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-black">
                     The Quick Shop
                   </h1>
-                  <p className="text-xs sm:text-sm text-gray-600 text-center -mt-1">Shop Quick, Ship Quicker</p>
+                  <p className="text-xs sm:text-sm text-blue-600/80 text-center -mt-1">Shop Quick, Ship Quicker</p>
                 </div>
                 <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 group-hover:opacity-60 transition-all duration-300 group-hover:rotate-12">
                   <Image 
@@ -150,7 +150,7 @@ export default function RootLayout({ children }) {
 
               {/* Desktop navigation */}
               <div className="hidden lg:flex items-center space-x-6">
-                <Link href="/checkout" className="text-black">
+                <Link href="/checkout" className="text-black hover:text-gray-700 transition-colors">
                   <div className="p-2 relative">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -211,7 +211,7 @@ export default function RootLayout({ children }) {
                     </div>
                   )
                 ) : (
-                  <Link href="/login" className="text-black">
+                  <Link href="/login" className="text-black text-sm hover:text-gray-700 transition-colors">
                     <div className="relative p-2">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -274,7 +274,7 @@ export default function RootLayout({ children }) {
                   {user?.status === 'active' && (
                     <Link
                       href="/settings"
-                      className="flex items-center p-2 text-black text-sm"
+                      className="flex items-center p-2 text-black text-sm hover:text-gray-700 transition-colors"
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
                       <svg
@@ -305,7 +305,7 @@ export default function RootLayout({ children }) {
                     <>
                       <Link
                         href="/settings"
-                        className="flex items-center p-2 text-black text-sm"
+                        className="flex items-center p-2 text-black text-sm hover:text-gray-700 transition-colors"
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
                         <svg
@@ -332,7 +332,7 @@ export default function RootLayout({ children }) {
                       </Link>
                       <Link
                         href="/admin"
-                        className="flex items-center p-2 text-black text-sm"
+                        className="flex items-center p-2 text-black text-sm hover:text-gray-700 transition-colors"
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
                         <svg
@@ -383,7 +383,7 @@ export default function RootLayout({ children }) {
                   {!session && (
                     <Link
                       href="/login"
-                      className="flex items-center p-2 text-black text-sm"
+                      className="flex items-center p-2 text-black text-sm hover:text-gray-700 transition-colors"
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
                       <svg
