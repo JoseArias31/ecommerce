@@ -706,15 +706,17 @@ export default function CheckoutPage() {
                               {address.first_name} {address.last_name}
                             </p>
                             <p className="text-gray-600">{address.address}</p>
-                            {address.apartment && (
-                              <p className="text-gray-600">{address.apartment}</p>
+                           {address.apartment && (
+                              <p className="text-gray-600"> Unit: {address.apartment}</p>
                             )}
                             <p className="text-gray-600">
-                              {address.city}, {address.state} {address.zip_code}
+                              {address.city}, {address.state} {address.zip_code} {address.country}
                             </p>
-                            <p className="text-gray-600">{address.country}</p>
+                           
                             <p className="text-gray-600 mt-2">
-                              {address.email} • {address.phone}
+                              Email: {address.email}
+                            </p><p className="text-gray-600 mt-2">
+                             Phone Number: {address.phone}
                             </p>
                           </div>
                           <input
