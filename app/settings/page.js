@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { ChevronDown, ChevronUp, User, ShoppingBag } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
+import { toast } from "react-hot-toast";
 
 export default function UserDashboard() {
   const [user, setUser] = useState(null);
@@ -23,6 +24,22 @@ export default function UserDashboard() {
   };
   const [expandedOrders, setExpandedOrders] = useState({});
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [addresses, setAddresses] = useState([]);
+  const [defaultAddressId, setDefaultAddressId] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [showAddressForm, setShowAddressForm] = useState(false);
+  const [newAddress, setNewAddress] = useState({
+    first_name: '',
+    last_name: '',
+    email: '',
+    phone: '',
+    address: '',
+    apartment: '',
+    city: '',
+    state: '',
+    zip_code: '',
+    country: 'CA'
+  });
 
   useEffect(() => {
     async function fetchUserData() {
@@ -79,6 +96,8 @@ export default function UserDashboard() {
 
             setShippingAddresses(shippingAddressesData || []);
           }
+
+          fetchAddresses();
         }
       } catch (error) {
         console.error("Error fetching user data:", error);
@@ -89,6 +108,159 @@ export default function UserDashboard() {
 
     fetchUserData();
   }, []);
+
+  const fetchAddresses = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from('shipping_addresses')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      setAddresses(data || []);
+      // Use the most recent address as default
+      if (data && data.length > 0) {
+        setDefaultAddressId(data[0].id);
+      }
+    } catch (error) {
+      console.error('Error fetching addresses:', error);
+      toast.error('Failed to load addresses');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleAddAddress = async (e) => {
+    e.preventDefault();
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error('You must be logged in to add an address');
+        return;
+      }
+
+      // Check if this address already exists
+      const existingAddress = addresses.find(addr => 
+        addr.address === newAddress.address &&
+        addr.apartment === newAddress.apartment &&
+        addr.city === newAddress.city &&
+        addr.state === newAddress.state &&
+        addr.zip_code === newAddress.zip_code &&
+        addr.country === newAddress.country
+      );
+
+      if (existingAddress) {
+        toast.error('This address already exists');
+        return;
+      }
+
+      // Create the new address
+      const { data, error } = await supabase
+        .from('shipping_addresses')
+        .insert([{
+          user_id: user.id,
+          first_name: newAddress.first_name,
+          last_name: newAddress.last_name,
+          email: newAddress.email,
+          phone: newAddress.phone,
+          address: newAddress.address,
+          apartment: newAddress.apartment || null,
+          city: newAddress.city,
+          state: newAddress.state,
+          zip_code: newAddress.zip_code,
+          country: newAddress.country,
+          created_at: new Date().toISOString()
+        }])
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Database error:', error);
+        throw new Error(error.message);
+      }
+
+      // Update the addresses list
+      setAddresses(prev => [data, ...prev]);
+      
+      // If this is the first address, set it as default
+      if (addresses.length === 0) {
+        setDefaultAddressId(data.id);
+      }
+
+      // Reset form and close modal
+      setNewAddress({
+        first_name: '',
+        last_name: '',
+        email: '',
+        phone: '',
+        address: '',
+        apartment: '',
+        city: '',
+        state: '',
+        zip_code: '',
+        country: 'CA'
+      });
+      setShowAddressForm(false);
+      
+      toast.success('Address added successfully');
+    } catch (error) {
+      console.error('Error adding address:', error);
+      toast.error(error.message || 'Failed to add address');
+    }
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target
+    setNewAddress(prev => ({
+      ...prev,
+      [name]: value
+    }))
+  }
+
+  const handleSetDefaultAddress = async (addressId) => {
+    try {
+      setDefaultAddressId(addressId);
+      toast.success('Default address updated');
+    } catch (error) {
+      console.error('Error setting default address:', error);
+      toast.error('Failed to update default address');
+    }
+  };
+
+  const handleDeleteAddress = async (addressId) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { error } = await supabase
+        .from('shipping_addresses')
+        .delete()
+        .eq('id', addressId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      setAddresses(prev => prev.filter(addr => addr.id !== addressId));
+      
+      // If deleted address was default, set a new default
+      if (addressId === defaultAddressId && addresses.length > 1) {
+        const newDefault = addresses.find(addr => addr.id !== addressId);
+        if (newDefault) {
+          setDefaultAddressId(newDefault.id);
+        }
+      }
+      
+      toast.success('Address deleted successfully');
+    } catch (error) {
+      console.error('Error deleting address:', error);
+      toast.error('Failed to delete address');
+    }
+  };
 
   const toggleOrderExpand = (orderId) => {
     setExpandedOrders((prev) => ({
@@ -852,49 +1024,57 @@ export default function UserDashboard() {
               <div>
                 <h2 className="text-xl font-medium mb-6">Shipping Addresses</h2>
 
-                {shippingAddresses.length === 0 ? (
-                  <div className="bg-gray-50 p-6 rounded-lg text-center">
-                    <p className="text-gray-500">
-                      No shipping addresses saved.
-                    </p>
+                {isLoading ? (
+                  <div className="flex justify-center">
+                    <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
                   </div>
                 ) : (
-                  <div className="grid md:grid-cols-2 gap-6">
-                    {shippingAddresses.map((address) => (
-                      <div
-                        key={address.id}
-                        className="bg-gray-50 p-6 rounded-lg"
-                      >
-                        <div className="flex justify-between items-start mb-4">
-                          <h3 className="font-medium">
-                            {address.first_name} {address.last_name}
-                          </h3>
-                          <span className="text-xs bg-gray-200 px-2 py-1 rounded-full">
-                            Order #{address.order_id.substring(0, 8)}
-                          </span>
-                        </div>
-                        <div className="space-y-2 text-sm">
-                          <p>
-                            {address.address}
-                            {address.apartment && `, ${address.apartment}`}
-                          </p>
-                          <p>
-                            {address.city}, {address.state} {address.zip_code}
-                          </p>
-                          <p>{address.country}</p>
-                          <p className="pt-2">{address.phone}</p>
-                          <p>{address.email}</p>
-                        </div>
-                        <div className="mt-4 pt-4 border-t border-gray-200">
-                          <p className="text-sm text-gray-500">
-                            Shipping Method
-                          </p>
-                          <p className="font-medium capitalize">
-                            {address.shipping_method}
-                          </p>
+                  <div className="space-y-4">
+                    {addresses.map((address) => (
+                      <div key={address.id} className="border rounded-lg p-4">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <p className="font-medium">
+                              {address.first_name} {address.last_name}
+                              {address.is_default && (
+                                <span className="ml-2 text-sm text-green-600">(Default)</span>
+                              )}
+                            </p>
+                            <p className="text-gray-600">{address.address}</p>
+                            {address.apartment && (
+                              <p className="text-gray-600">{address.apartment}</p>
+                            )}
+                            <p className="text-gray-600">
+                              {address.city}, {address.state} {address.zip_code}
+                            </p>
+                            <p className="text-gray-600">{address.country}</p>
+                          </div>
+                          <div className="flex space-x-2">
+                            {!address.is_default && (
+                              <button
+                                onClick={() => handleSetDefaultAddress(address.id)}
+                                className="text-blue-600 hover:text-blue-800"
+                              >
+                                Set as Default
+                              </button>
+                            )}
+                            <button
+                              onClick={() => handleDeleteAddress(address.id)}
+                              className="text-red-600 hover:text-red-800"
+                            >
+                              Delete
+                            </button>
+                          </div>
                         </div>
                       </div>
                     ))}
+                    
+                    <button
+                      onClick={() => setShowAddressForm(true)}
+                      className="w-full border-2 border-dashed border-gray-300 rounded-lg p-4 text-gray-600 hover:border-gray-400 hover:text-gray-800 transition-colors"
+                    >
+                      + Add New Address
+                    </button>
                   </div>
                 )}
               </div>
@@ -902,6 +1082,176 @@ export default function UserDashboard() {
           </div>
         </div>
       </main>
+
+      {/* Address Form Modal */}
+      {showAddressForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <h3 className="text-xl font-semibold mb-4">Add New Address</h3>
+            <form onSubmit={handleAddAddress} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="first_name" className="block text-sm font-medium text-gray-700 mb-1">
+                    First Name
+                  </label>
+                  <input
+                    id="first_name"
+                    name="first_name"
+                    value={newAddress.first_name}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="last_name" className="block text-sm font-medium text-gray-700 mb-1">
+                    Last Name
+                  </label>
+                  <input
+                    id="last_name"
+                    name="last_name"
+                    value={newAddress.last_name}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                  Email
+                </label>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  value={newAddress.email}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+                  Phone Number
+                </label>
+                <input
+                  id="phone"
+                  name="phone"
+                  type="tel"
+                  value={newAddress.phone}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-1">
+                  Country/Region
+                </label>
+                <select
+                  id="country"
+                  name="country"
+                  value={newAddress.country}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
+                >
+                  <option value="CA">Canada</option>
+                  <option value="US">United States</option>
+                </select>
+              </div>
+
+              <div>
+                <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">
+                  Street Address
+                </label>
+                <input
+                  id="address"
+                  name="address"
+                  value={newAddress.address}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="apartment" className="block text-sm font-medium text-gray-700 mb-1">
+                  Apartment, suite, etc. (optional)
+                </label>
+                <input
+                  id="apartment"
+                  name="apartment"
+                  value={newAddress.apartment}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-1">
+                    City
+                  </label>
+                  <input
+                    id="city"
+                    name="city"
+                    value={newAddress.city}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-1">
+                    State/Province
+                  </label>
+                  <input
+                    id="state"
+                    name="state"
+                    value={newAddress.state}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="zip_code" className="block text-sm font-medium text-gray-700 mb-1">
+                    ZIP/Postal Code
+                  </label>
+                  <input
+                    id="zip_code"
+                    name="zip_code"
+                    value={newAddress.zip_code}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-2 mt-6">
+                <button
+                  type="button"
+                  onClick={() => setShowAddressForm(false)}
+                  className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-black text-white rounded-md hover:bg-gray-800"
+                >
+                  Save Address
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

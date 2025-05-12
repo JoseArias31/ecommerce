@@ -12,6 +12,7 @@ import useProtectedRoute from "@/app/auth/register/Hooks/useProtectedRoutes";
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 import { PageTransition } from '@/components/page-transitions';
+import { Toaster } from 'react-hot-toast'
 
 export default function RootLayout({ children }) {
   const [cartCount, setCartCount] = useState(0);
@@ -434,6 +435,7 @@ export default function RootLayout({ children }) {
           {children}
           <Footer />
         </div>
+        <Toaster position="top-center" />
       </body>
     </html>
   );

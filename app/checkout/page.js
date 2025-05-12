@@ -9,19 +9,21 @@ import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
 import { EmailTemplate } from "@/components/EmailTemplate";
 import resend from "@/lib/resend";
+import { toast } from "react-hot-toast";
+import { useForm } from "react-hook-form";
 
 // Country list for international shipping
 const countries = [
-  { code: "US", name: "United States" },
   { code: "CA", name: "Canada" },
-  { code: "GB", name: "United Kingdom" },
-  { code: "AU", name: "Australia" },
-  { code: "DE", name: "Germany" },
-  { code: "FR", name: "France" },
-  { code: "JP", name: "Japan" },
-  { code: "BR", name: "Brazil" },
-  { code: "IN", name: "India" },
-  { code: "MX", name: "Mexico" },
+  { code: "US", name: "United States" },
+  // { code: "GB", name: "United Kingdom" },
+  // { code: "AU", name: "Australia" },
+  // { code: "DE", name: "Germany" },
+  // { code: "FR", name: "France" },
+  // { code: "JP", name: "Japan" },
+  // { code: "BR", name: "Brazil" },
+  // { code: "IN", name: "India" },
+  // { code: "MX", name: "Mexico" },
   // Add more countries as needed
 ].sort((a, b) => a.name.localeCompare(b.name))
 
@@ -103,7 +105,7 @@ export default function CheckoutPage() {
     city: "",
     state: "",
     zipCode: "",
-    country: "US",
+    country: "CA",
   })
   const [shippingMethod, setShippingMethod] = useState("standard")
   const [paymentMethod, setPaymentMethod] = useState("credit")
@@ -116,6 +118,21 @@ export default function CheckoutPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [showAuthPrompt, setShowAuthPrompt] = useState(false)
   const setQuantity = useQuantityStore((state) => state.setQuantity)
+  const [savedAddresses, setSavedAddresses] = useState([])
+  const [selectedAddressId, setSelectedAddressId] = useState(null)
+  const [showNewAddressForm, setShowNewAddressForm] = useState(false)
+  const [billingInfo, setBillingInfo] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    country: "CA",
+    address: "",
+    apartment: "",
+    city: "",
+    state: "",
+    zipCode: ""
+  });
 
   // Load cart from localStorage on mount
   useEffect(() => {
@@ -146,6 +163,122 @@ export default function CheckoutPage() {
 
     return () => subscription.unsubscribe()
   }, [])
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchSavedAddresses()
+    }
+  }, [isAuthenticated])
+
+  const fetchSavedAddresses = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        console.log('No active session')
+        return
+      }
+
+      const { data, error } = await supabase
+        .from('shipping_addresses')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        console.error('Error fetching addresses:', error.message)
+        toast.error('Failed to load saved addresses')
+        return
+      }
+
+      setSavedAddresses(data || [])
+      // Use the most recent address as default
+      if (data && data.length > 0) {
+        const mostRecentAddress = data[0] // First address after ordering by created_at
+        setSelectedAddressId(mostRecentAddress.id)
+        setShippingInfo({
+          firstName: mostRecentAddress.first_name,
+          lastName: mostRecentAddress.last_name,
+          email: mostRecentAddress.email,
+          phone: mostRecentAddress.phone,
+          address: mostRecentAddress.address,
+          apartment: mostRecentAddress.apartment || '',
+          city: mostRecentAddress.city,
+          state: mostRecentAddress.state,
+          zipCode: mostRecentAddress.zip_code,
+          country: mostRecentAddress.country
+        })
+      }
+    } catch (error) {
+      console.error('Error in fetchSavedAddresses:', error)
+      toast.error('Failed to load saved addresses')
+    }
+  }
+
+  const handleAddressSelect = (address) => {
+    setSelectedAddressId(address.id)
+    setShippingInfo({
+      firstName: address.first_name,
+      lastName: address.last_name,
+      email: address.email,
+      phone: address.phone,
+      address: address.address,
+      apartment: address.apartment || '',
+      city: address.city,
+      state: address.state,
+      zipCode: address.zip_code,
+      country: address.country
+    })
+  }
+
+  const handleSaveAddress = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      // Check if this address already exists
+      const existingAddress = savedAddresses.find(addr => 
+        addr.address === shippingInfo.address &&
+        addr.apartment === shippingInfo.apartment &&
+        addr.city === shippingInfo.city &&
+        addr.state === shippingInfo.state &&
+        addr.zip_code === shippingInfo.zipCode &&
+        addr.country === shippingInfo.country
+      )
+
+      if (existingAddress) {
+        toast.error('This address already exists')
+        return
+      }
+
+      const { data, error } = await supabase
+        .from('shipping_addresses')
+        .insert([{
+          user_id: user.id,
+          first_name: shippingInfo.firstName,
+          last_name: shippingInfo.lastName,
+          email: shippingInfo.email,
+          phone: shippingInfo.phone,
+          address: shippingInfo.address,
+          apartment: shippingInfo.apartment,
+          city: shippingInfo.city,
+          state: shippingInfo.state,
+          zip_code: shippingInfo.zipCode,
+          country: shippingInfo.country,
+          created_at: new Date().toISOString(),
+        }])
+        .select()
+        .single()
+
+      if (error) throw error
+
+      setSavedAddresses(prev => [...prev, data])
+      setSelectedAddressId(data.id)
+      toast.success('Address saved successfully')
+    } catch (error) {
+      console.error('Error saving address:', error)
+      toast.error('Failed to save address')
+    }
+  }
 
   // Helper to sync cart state and localStorage + badge
   const syncCart = (newCart) => {
@@ -490,6 +623,14 @@ export default function CheckoutPage() {
     }))
   }
 
+  const handleBillingInputChange = (e) => {
+    const { name, value } = e.target;
+    setBillingInfo(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
   // Render different steps based on activeStep
   const renderCheckoutStep = () => {
     if (isComplete) {
@@ -519,154 +660,211 @@ export default function CheckoutPage() {
     switch (activeStep) {
       case "shipping":
         return (
-          <form onSubmit={handleShippingSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
-                  First Name
-                </label>
-                <input
-                  id="firstName"
-                  name="firstName"
-                  value={shippingInfo.firstName}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
-                />
-              </div>
-              <div>
-                <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
-                  Last Name
-                </label>
-                <input
-                  id="lastName"
-                  name="lastName"
-                  value={shippingInfo.lastName}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
-                />
-              </div>
+          <div className="bg-white rounded-lg shadow-sm border p-6 mb-8">
+            <h2 className="text-xl font-semibold mb-4">Shipping Information</h2>
+            
+            {/* Address Selection Section */}
+            <div className="mb-6">
+              {isAuthenticated && savedAddresses.length > 0 && !showNewAddressForm && (
+                <>
+                  <h3 className="font-medium mb-2">Saved Addresses</h3>
+                  <div className="space-y-2">
+                    {savedAddresses.map((address) => (
+                      <div
+                        key={address.id}
+                        className={`border rounded-lg p-4 cursor-pointer ${
+                          selectedAddressId === address.id ? 'border-blue-500 bg-blue-50' : ''
+                        }`}
+                        onClick={() => handleAddressSelect(address)}
+                      >
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <p className="font-medium">
+                              {address.first_name} {address.last_name}
+                            </p>
+                            <p className="text-gray-600">{address.address}</p>
+                            {address.apartment && (
+                              <p className="text-gray-600">{address.apartment}</p>
+                            )}
+                            <p className="text-gray-600">
+                              {address.city}, {address.state} {address.zip_code}
+                            </p>
+                            <p className="text-gray-600">{address.country}</p>
+                          </div>
+                          <input
+                            type="radio"
+                            checked={selectedAddressId === address.id}
+                            onChange={() => handleAddressSelect(address)}
+                            className="ml-4"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  <button
+                    onClick={() => setShowNewAddressForm(true)}
+                    className="mt-4 text-blue-600 hover:text-blue-800"
+                  >
+                    + Add New Address
+                  </button>
+                </>
+              )}
+
+              {(!isAuthenticated || showNewAddressForm) && (
+                <form onSubmit={handleSaveAddress} className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
+                        First Name
+                      </label>
+                      <input
+                        id="firstName"
+                        name="firstName"
+                        value={shippingInfo.firstName}
+                        onChange={handleInputChange}
+                        required
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
+                        Last Name
+                      </label>
+                      <input
+                        id="lastName"
+                        name="lastName"
+                        value={shippingInfo.lastName}
+                        onChange={handleInputChange}
+                        required
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                      Email
+                    </label>
+                    <input
+                      id="email"
+                      name="email"
+                      type="email"
+                      value={shippingInfo.email}
+                      onChange={handleInputChange}
+                      required
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+                      Phone Number
+                    </label>
+                    <input
+                      id="phone"
+                      name="phone"
+                      type="tel"
+                      value={shippingInfo.phone}
+                      onChange={handleInputChange}
+                      required
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-1">
+                      Country/Region
+                    </label>
+                    <select
+                      id="country"
+                      name="country"
+                      value={shippingInfo.country}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
+                    >
+                      {countries.map((country) => (
+                        <option key={country.code} value={country.code}>
+                          {country.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">
+                      Street Address
+                    </label>
+                    <input
+                      id="address"
+                      name="address"
+                      value={shippingInfo.address}
+                      onChange={handleInputChange}
+                      required
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="apartment" className="block text-sm font-medium text-gray-700 mb-1">
+                      Apartment, suite, etc. (optional)
+                    </label>
+                    <input
+                      id="apartment"
+                      name="apartment"
+                      value={shippingInfo.apartment}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-1">
+                        City
+                      </label>
+                      <input
+                        id="city"
+                        name="city"
+                        value={shippingInfo.city}
+                        onChange={handleInputChange}
+                        required
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-1">
+                        State/Province
+                      </label>
+                      <input
+                        id="state"
+                        name="state"
+                        value={shippingInfo.state}
+                        onChange={handleInputChange}
+                        required
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="zipCode" className="block text-sm font-medium text-gray-700 mb-1">
+                        ZIP/Postal Code
+                      </label>
+                      <input
+                        id="zipCode"
+                        name="zipCode"
+                        value={shippingInfo.zipCode}
+                        onChange={handleInputChange}
+                        required
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
+                      />
+                    </div>
+                  </div>
+                </form>
+              )}
             </div>
 
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                Email
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                value={shippingInfo.email}
-                onChange={handleInputChange}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-                Phone Number
-              </label>
-              <input
-                id="phone"
-                name="phone"
-                type="tel"
-                value={shippingInfo.phone}
-                onChange={handleInputChange}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-1">
-                Country/Region
-              </label>
-              <select
-                id="country"
-                name="country"
-                value={shippingInfo.country}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
-              >
-                {countries.map((country) => (
-                  <option key={country.code} value={country.code}>
-                    {country.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">
-                Street Address
-              </label>
-              <input
-                id="address"
-                name="address"
-                value={shippingInfo.address}
-                onChange={handleInputChange}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="apartment" className="block text-sm font-medium text-gray-700 mb-1">
-                Apartment, suite, etc. (optional)
-              </label>
-              <input
-                id="apartment"
-                name="apartment"
-                value={shippingInfo.apartment}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-1">
-                  City
-                </label>
-                <input
-                  id="city"
-                  name="city"
-                  value={shippingInfo.city}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
-                />
-              </div>
-              <div>
-                <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-1">
-                  State/Province
-                </label>
-                <input
-                  id="state"
-                  name="state"
-                  value={shippingInfo.state}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
-                />
-              </div>
-              <div>
-                <label htmlFor="zipCode" className="block text-sm font-medium text-gray-700 mb-1">
-                  ZIP/Postal Code
-                </label>
-                <input
-                  id="zipCode"
-                  name="zipCode"
-                  value={shippingInfo.zipCode}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
-                />
-              </div>
-            </div>
-              <div className="border-t pt-6">
+            {/* Billing Address Section - Always visible */}
+            <div className="border-t pt-6">
               <h3 className="font-medium mb-4">Billing Address</h3>
               <div className="space-y-3">
                 <div className="flex items-center space-x-2">
@@ -697,10 +895,162 @@ export default function CheckoutPage() {
                     Use a different billing address
                   </label>
                 </div>
+
+                {billingAddress === "different" && (
+                  <div className="mt-4 space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label htmlFor="billingFirstName" className="block text-sm font-medium text-gray-700 mb-1">
+                          First Name
+                        </label>
+                        <input
+                          id="billingFirstName"
+                          name="billingFirstName"
+                          value={billingInfo.firstName}
+                          onChange={handleBillingInputChange}
+                          required
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="billingLastName" className="block text-sm font-medium text-gray-700 mb-1">
+                          Last Name
+                        </label>
+                        <input
+                          id="billingLastName"
+                          name="billingLastName"
+                          value={billingInfo.lastName}
+                          onChange={handleBillingInputChange}
+                          required
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label htmlFor="billingEmail" className="block text-sm font-medium text-gray-700 mb-1">
+                        Email
+                      </label>
+                      <input
+                        id="billingEmail"
+                        name="billingEmail"
+                        type="email"
+                        value={billingInfo.email}
+                        onChange={handleBillingInputChange}
+                        required
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="billingPhone" className="block text-sm font-medium text-gray-700 mb-1">
+                        Phone Number
+                      </label>
+                      <input
+                        id="billingPhone"
+                        name="billingPhone"
+                        type="tel"
+                        value={billingInfo.phone}
+                        onChange={handleBillingInputChange}
+                        required
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="billingCountry" className="block text-sm font-medium text-gray-700 mb-1">
+                        Country/Region
+                      </label>
+                      <select
+                        id="billingCountry"
+                        name="billingCountry"
+                        value={billingInfo.country}
+                        onChange={handleBillingInputChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
+                      >
+                        {countries.map((country) => (
+                          <option key={country.code} value={country.code}>
+                            {country.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label htmlFor="billingAddress" className="block text-sm font-medium text-gray-700 mb-1">
+                        Street Address
+                      </label>
+                      <input
+                        id="billingAddress"
+                        name="billingAddress"
+                        value={billingInfo.address}
+                        onChange={handleBillingInputChange}
+                        required
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="billingApartment" className="block text-sm font-medium text-gray-700 mb-1">
+                        Apartment, suite, etc. (optional)
+                      </label>
+                      <input
+                        id="billingApartment"
+                        name="billingApartment"
+                        value={billingInfo.apartment}
+                        onChange={handleBillingInputChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label htmlFor="billingCity" className="block text-sm font-medium text-gray-700 mb-1">
+                          City
+                        </label>
+                        <input
+                          id="billingCity"
+                          name="billingCity"
+                          value={billingInfo.city}
+                          onChange={handleBillingInputChange}
+                          required
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="billingState" className="block text-sm font-medium text-gray-700 mb-1">
+                          State/Province
+                        </label>
+                        <input
+                          id="billingState"
+                          name="billingState"
+                          value={billingInfo.state}
+                          onChange={handleBillingInputChange}
+                          required
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="billingZipCode" className="block text-sm font-medium text-gray-700 mb-1">
+                          ZIP/Postal Code
+                        </label>
+                        <input
+                          id="billingZipCode"
+                          name="billingZipCode"
+                          value={billingInfo.zipCode}
+                          onChange={handleBillingInputChange}
+                          required
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
-            <div className="pt-4">
+            {/* Shipping Method Section - Always visible */}
+            <div className="pt-6">
               <h3 className="font-medium mb-3">Shipping Method</h3>
               <div className="space-y-3">
                 <div className="flex items-center justify-between border p-4 rounded-md">
@@ -740,13 +1090,30 @@ export default function CheckoutPage() {
               </div>
             </div>
 
-            <button
-              type="submit"
-              className="w-full bg-black text-white py-2 px-4 rounded-md hover:bg-gray-800 transition-colors"
-            >
-              Continue to Payment
-            </button>
-          </form>
+            {/* Save Address Checkbox - Always visible if authenticated */}
+            {isAuthenticated && (
+              <div className="flex items-center mt-6">
+                <input
+                  type="checkbox"
+                  id="save_address"
+                  className="mr-2"
+                />
+                <label htmlFor="save_address">Save this address for future orders</label>
+              </div>
+            )}
+            
+            {/* Continue Button - Always visible */}
+            <div className="flex justify-end mt-6">
+              <button
+                type="button"
+                onClick={handleShippingSubmit}
+                className="bg-black text-white px-6 py-2 rounded-md hover:bg-gray-800 transition-colors"
+                disabled={isProcessing}
+              >
+                {isProcessing ? 'Processing...' : 'Continue to Payment'}
+              </button>
+            </div>
+          </div>
         )
 
       case "payment":

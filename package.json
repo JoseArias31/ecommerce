@@ -59,6 +59,7 @@
     "react-dom": "^18.2.0",
     "react-floating-whatsapp": "^5.0.8",
     "react-hook-form": "^7.49.3",
+    "react-hot-toast": "^2.5.2",
     "react-resizable-panels": "^2.1.7",
     "recharts": "2.15.0",
     "resend": "^4.5.0",
