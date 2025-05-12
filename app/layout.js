@@ -108,22 +108,16 @@ export default function RootLayout({ children }) {
         <title>The Quick Shop</title>
         <meta name="description" content="A minimalist e-commerce store" />
       </head>
-      <body className="min-h-screen">
-        <FloatingWhatsApp
-          phoneNumber="16474252986"
-          accountName="The Quick Shop"
-          statusMessage="Typically replies within 2 minutes"
-          avatar='/logowithbackground.png'
-        />
-        <div className="flex flex-col min-h-screen">
-          <nav className="border-b sticky top-0 z-50 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/60 transition-shadow">
-            <div className="container mx-auto px-4 py-2 flex justify-between items-center">
+      <body className="min-h-screen flex flex-col">
+        <header className="sticky top-0 z-50 bg-[#092d5d]/90 backdrop-blur-sm border-b border-[#1a2b3c]/20">
+          <div className="container mx-auto px-4">
+            <div className="flex items-center justify-between h-16">
               <Link href="/" className="relative group flex flex-row items-center">
                 <div className="relative z-10">
-                  <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-black">
+                  <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white">
                     The Quick Shop
                   </h1>
-                  <p className="text-xs sm:text-sm text-blue-600/80 text-center -mt-1">Shop Quick, Ship Quicker</p>
+                  <p className="text-xs sm:text-sm text-blue-200/90 text-center -mt-1">Shop Quick, Ship Quicker</p>
                 </div>
                 <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 group-hover:opacity-60 transition-all duration-300 group-hover:rotate-12">
                   <Image 
@@ -131,7 +125,7 @@ export default function RootLayout({ children }) {
                     alt="Logo" 
                     width={64} 
                     height={64}
-                    className="object-contain"
+                    className="object-contain brightness-0 invert"
                   />
                 </div>
               </Link>
@@ -139,7 +133,7 @@ export default function RootLayout({ children }) {
               {/* Mobile menu button */}
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="lg:hidden text-black p-1"
+                className="lg:hidden text-white p-1"
               >
                 {isMobileMenuOpen ? (
                   <X className="h-5 w-5 sm:h-6 sm:w-6" />
@@ -150,7 +144,7 @@ export default function RootLayout({ children }) {
 
               {/* Desktop navigation */}
               <div className="hidden lg:flex items-center space-x-6">
-                <Link href="/checkout" className="text-black hover:text-gray-700 transition-colors">
+                <Link href="/checkout" className="text-white hover:text-blue-200 transition-colors">
                   <div className="p-2 relative">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -176,7 +170,7 @@ export default function RootLayout({ children }) {
                 {session ? (
                   <div className="flex items-center gap-2">
                     {user?.status === 'admin' && (
-                      <Link href="/admin" className="text-black hover:text-gray-700 transition-colors">
+                      <Link href="/admin" className="text-white hover:text-blue-200 transition-colors">
                         <div className="p-2 flex items-center gap-1">
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
@@ -197,7 +191,7 @@ export default function RootLayout({ children }) {
                     )}
                     <button 
                       onClick={handleSignOut}
-                      className="text-black p-2 flex items-center gap-1"
+                      className="text-white hover:text-blue-200 p-2 flex items-center gap-1"
                     >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -217,7 +211,7 @@ export default function RootLayout({ children }) {
                       <span className="text-sm">Sign Out</span>
                     </button>
                     <Link href={'/settings'}>
-                      <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
+                      <div className="w-8 h-8 rounded-full bg-blue-200/20 flex items-center justify-center text-white">
                         {user?.username?.charAt(0).toUpperCase() || 
                          user?.email?.charAt(0).toUpperCase() || 
                          'U'}
@@ -225,7 +219,7 @@ export default function RootLayout({ children }) {
                     </Link>
                   </div>
                 ) : (
-                  <Link href="/login" className="text-black text-sm hover:text-gray-700 transition-colors">
+                  <Link href="/login" className="text-white hover:text-blue-200 text-sm transition-colors">
                     <div className="relative p-2">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -242,7 +236,7 @@ export default function RootLayout({ children }) {
                         <circle cx="12" cy="7" r="4"></circle>
                       </svg>
                       <div className="absolute -top-2 right-0 flex items-center space-x-1 animate-bounce">
-                        <span className="bg-blue-500 text-white text-xs rounded-full px-1 drop-shadow">
+                        <span className="bg-blue-400 text-white text-xs rounded-full px-1 drop-shadow">
                           Hey!
                         </span>
                       </div>
@@ -254,7 +248,7 @@ export default function RootLayout({ children }) {
 
             {/* Mobile menu */}
             <div
-              className={`lg:hidden absolute top-full left-0 right-0 bg-white border-b shadow-lg transition-all duration-300 ease-in-out ${
+              className={`lg:hidden absolute top-full left-0 right-0 bg-[#1a2b3c]/95 backdrop-blur-sm border-b border-[#1a2b3c]/20 shadow-lg transition-all duration-300 ease-in-out ${
                 isMobileMenuOpen ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2 pointer-events-none"
               }`}
             >
@@ -262,7 +256,7 @@ export default function RootLayout({ children }) {
                 <div className="flex flex-col space-y-1">
                   <Link
                     href="/checkout"
-                    className="flex items-center p-2 text-black text-sm"
+                    className="flex items-center p-2 text-white text-sm hover:text-blue-200"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     <svg
@@ -288,7 +282,7 @@ export default function RootLayout({ children }) {
                   {user?.status === 'active' && (
                     <Link
                       href="/settings"
-                      className="flex items-center p-2 text-black text-sm hover:text-gray-700 transition-colors"
+                      className="flex items-center p-2 text-white text-sm hover:text-blue-200"
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
                       <svg
@@ -319,7 +313,7 @@ export default function RootLayout({ children }) {
                     <>
                       <Link
                         href="/settings"
-                        className="flex items-center p-2 text-black text-sm hover:text-gray-700 transition-colors"
+                        className="flex items-center p-2 text-white text-sm hover:text-blue-200"
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
                         <svg
@@ -346,7 +340,7 @@ export default function RootLayout({ children }) {
                       </Link>
                       <Link
                         href="/admin"
-                        className="flex items-center p-2 text-black text-sm hover:text-gray-700 transition-colors"
+                        className="flex items-center p-2 text-white text-sm hover:text-blue-200"
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
                         <svg
@@ -374,7 +368,7 @@ export default function RootLayout({ children }) {
                         handleSignOut();
                         setIsMobileMenuOpen(false);
                       }}
-                      className="flex items-center p-2 text-black w-full text-left text-sm"
+                      className="flex items-center p-2 text-white w-full text-left text-sm"
                     >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -397,7 +391,7 @@ export default function RootLayout({ children }) {
                   {!session && (
                     <Link
                       href="/login"
-                      className="flex items-center p-2 text-black text-sm hover:text-gray-700 transition-colors"
+                      className="flex items-center p-2 text-white text-sm hover:text-blue-200"
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
                       <svg
@@ -418,7 +412,7 @@ export default function RootLayout({ children }) {
                       <div className="flex items-center">
                         Sign In
                         <div className="ml-2 flex items-center animate-bounce">
-                          <span className="bg-blue-500 text-white text-xs rounded-full px-1 drop-shadow">
+                          <span className="bg-blue-400 text-white text-xs rounded-full px-1 drop-shadow">
                             Hey!
                           </span>
                         </div>
@@ -428,7 +422,15 @@ export default function RootLayout({ children }) {
                 </div>
               </div>
             </div>
-          </nav>
+          </div>
+        </header>
+        <FloatingWhatsApp
+          phoneNumber="16474252986"
+          accountName="The Quick Shop"
+          statusMessage="Typically replies within 2 minutes"
+          avatar='/logowithbackground.png'
+        />
+        <div className="flex flex-col min-h-screen">
           {children}
           <Footer />
         </div>
