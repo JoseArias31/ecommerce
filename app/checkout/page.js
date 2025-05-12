@@ -170,6 +170,21 @@ export default function CheckoutPage() {
     }
   }, [isAuthenticated])
 
+  const isDuplicateAddress = (address, existingAddresses) => {
+    return existingAddresses.some(existing => 
+      existing.first_name === address.first_name &&
+      existing.last_name === address.last_name &&
+      existing.email === address.email &&
+      existing.phone === address.phone &&
+      existing.address === address.address &&
+      existing.apartment === address.apartment &&
+      existing.city === address.city &&
+      existing.state === address.state &&
+      existing.zip_code === address.zip_code &&
+      existing.country === address.country
+    )
+  }
+
   const fetchSavedAddresses = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession()
@@ -190,10 +205,18 @@ export default function CheckoutPage() {
         return
       }
 
-      setSavedAddresses(data || [])
+      // Filter out duplicate addresses
+      const uniqueAddresses = data.reduce((acc, current) => {
+        if (!isDuplicateAddress(current, acc)) {
+          acc.push(current)
+        }
+        return acc
+      }, [])
+
+      setSavedAddresses(uniqueAddresses)
       // Use the most recent address as default
-      if (data && data.length > 0) {
-        const mostRecentAddress = data[0] // First address after ordering by created_at
+      if (uniqueAddresses.length > 0) {
+        const mostRecentAddress = uniqueAddresses[0]
         setSelectedAddressId(mostRecentAddress.id)
         setShippingInfo({
           firstName: mostRecentAddress.first_name,
@@ -665,7 +688,7 @@ export default function CheckoutPage() {
             
             {/* Address Selection Section */}
             <div className="mb-6">
-              {isAuthenticated && savedAddresses.length > 0 && !showNewAddressForm && (
+              {isAuthenticated && savedAddresses.length > 0 && !showNewAddressForm ? (
                 <>
                   <h3 className="font-medium mb-2">Saved Addresses</h3>
                   <div className="space-y-2">
@@ -690,6 +713,9 @@ export default function CheckoutPage() {
                               {address.city}, {address.state} {address.zip_code}
                             </p>
                             <p className="text-gray-600">{address.country}</p>
+                            <p className="text-gray-600 mt-2">
+                              {address.email} • {address.phone}
+                            </p>
                           </div>
                           <input
                             type="radio"
@@ -709,9 +735,7 @@ export default function CheckoutPage() {
                     + Add New Address
                   </button>
                 </>
-              )}
-
-              {(!isAuthenticated || showNewAddressForm) && (
+              ) : (
                 <form onSubmit={handleSaveAddress} className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>

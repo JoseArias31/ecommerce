@@ -109,6 +109,21 @@ export default function UserDashboard() {
     fetchUserData();
   }, []);
 
+  const isDuplicateAddress = (address, existingAddresses) => {
+    return existingAddresses.some(existing => 
+      existing.first_name === address.first_name &&
+      existing.last_name === address.last_name &&
+      existing.email === address.email &&
+      existing.phone === address.phone &&
+      existing.address === address.address &&
+      existing.apartment === address.apartment &&
+      existing.city === address.city &&
+      existing.state === address.state &&
+      existing.zip_code === address.zip_code &&
+      existing.country === address.country
+    )
+  }
+
   const fetchAddresses = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -122,10 +137,18 @@ export default function UserDashboard() {
 
       if (error) throw error;
 
-      setAddresses(data || []);
+      // Filter out duplicate addresses
+      const uniqueAddresses = data.reduce((acc, current) => {
+        if (!isDuplicateAddress(current, acc)) {
+          acc.push(current);
+        }
+        return acc;
+      }, []);
+
+      setAddresses(uniqueAddresses);
       // Use the most recent address as default
-      if (data && data.length > 0) {
-        setDefaultAddressId(data[0].id);
+      if (uniqueAddresses.length > 0) {
+        setDefaultAddressId(uniqueAddresses[0].id);
       }
     } catch (error) {
       console.error('Error fetching addresses:', error);
@@ -145,21 +168,11 @@ export default function UserDashboard() {
       }
 
       // Check if this address already exists
-      const existingAddress = addresses.find(addr => 
-        addr.address === newAddress.address &&
-        addr.apartment === newAddress.apartment &&
-        addr.city === newAddress.city &&
-        addr.state === newAddress.state &&
-        addr.zip_code === newAddress.zip_code &&
-        addr.country === newAddress.country
-      );
-
-      if (existingAddress) {
+      if (isDuplicateAddress(newAddress, addresses)) {
         toast.error('This address already exists');
         return;
       }
 
-      // Create the new address
       const { data, error } = await supabase
         .from('shipping_addresses')
         .insert([{
@@ -169,7 +182,7 @@ export default function UserDashboard() {
           email: newAddress.email,
           phone: newAddress.phone,
           address: newAddress.address,
-          apartment: newAddress.apartment || null,
+          apartment: newAddress.apartment,
           city: newAddress.city,
           state: newAddress.state,
           zip_code: newAddress.zip_code,
@@ -1036,9 +1049,6 @@ export default function UserDashboard() {
                           <div>
                             <p className="font-medium">
                               {address.first_name} {address.last_name}
-                              {address.is_default && (
-                                <span className="ml-2 text-sm text-green-600">(Default)</span>
-                              )}
                             </p>
                             <p className="text-gray-600">{address.address}</p>
                             {address.apartment && (
@@ -1048,22 +1058,9 @@ export default function UserDashboard() {
                               {address.city}, {address.state} {address.zip_code}
                             </p>
                             <p className="text-gray-600">{address.country}</p>
-                          </div>
-                          <div className="flex space-x-2">
-                            {!address.is_default && (
-                              <button
-                                onClick={() => handleSetDefaultAddress(address.id)}
-                                className="text-blue-600 hover:text-blue-800"
-                              >
-                                Set as Default
-                              </button>
-                            )}
-                            <button
-                              onClick={() => handleDeleteAddress(address.id)}
-                              className="text-red-600 hover:text-red-800"
-                            >
-                              Delete
-                            </button>
+                            <p className="text-gray-600 mt-2">
+                              {address.email} • {address.phone}
+                            </p>
                           </div>
                         </div>
                       </div>
