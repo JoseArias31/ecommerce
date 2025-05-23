@@ -14,6 +14,8 @@ import { useRouter } from 'next/navigation';
 import { PageTransition } from '@/components/page-transitions';
 import { Toaster } from 'react-hot-toast'
 import { TranslationProvider, useTranslation } from '@/contexts/TranslationContext';
+import { CountryProvider, useCountry } from '@/contexts/CountryContext';
+import CountrySelector from '@/components/country-selector';
 
 // This component is not needed as we're wrapping everything with TranslationProvider
 
@@ -108,15 +110,17 @@ export default function RootLayout({ children }) {
 
   return (
     <TranslationProvider>
-      <LayoutContent 
-        cartCount={cartCount} 
-        user={user} 
-        isMobileMenuOpen={isMobileMenuOpen} 
-        setIsMobileMenuOpen={setIsMobileMenuOpen} 
-        session={session} 
-        handleSignOut={handleSignOut} 
-        children={children} 
-      />
+      <CountryProvider>
+        <LayoutContent 
+          cartCount={cartCount} 
+          user={user} 
+          isMobileMenuOpen={isMobileMenuOpen} 
+          setIsMobileMenuOpen={setIsMobileMenuOpen} 
+          session={session} 
+          handleSignOut={handleSignOut} 
+          children={children} 
+        />
+      </CountryProvider>
     </TranslationProvider>
   );
 }
@@ -158,6 +162,8 @@ function LayoutContent({ cartCount, user, isMobileMenuOpen, setIsMobileMenuOpen,
                 <button
                   onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                   className="lg:hidden text-white p-1"
+                  type="button"
+                  aria-label="Toggle menu"
                 >
                   {isMobileMenuOpen ? (
                     <X className="h-5 w-5 sm:h-6 sm:w-6" />
@@ -167,16 +173,17 @@ function LayoutContent({ cartCount, user, isMobileMenuOpen, setIsMobileMenuOpen,
                 </button>
 
                 {/* Desktop navigation */}
-                <div className="flex items-center space-x-6">
-                  {/* Language Toggle Button */}
-                  <button 
+                <div className="hidden lg:flex items-center space-x-6">
+                  {/* Country selector */}
+                  <CountrySelector />
+                  
+                  {/* Language toggle */}
+                  <button
                     onClick={toggleLanguage}
-                    className="text-white hover:text-blue-200 transition-colors flex items-center"
-                    aria-label="Toggle language"
+                    className="p-2 text-white hover:text-blue-200 flex items-center space-x-1"
                   >
-                    <Globe className="h-6 w-6" />
-                    <span className="ml-1 text-sm hidden md:inline">{language === 'en' ? 'Español' : 'English'}</span>
-                    <span className="sr-only">Switch to {language === 'en' ? 'Spanish' : 'English'}</span>
+                    <Globe size={20} />
+                    <span className="ml-1 hidden md:inline">{language === 'en' ? 'EN' : 'ES'}</span>
                   </button>
                   
                   <Link href="/checkout" className="text-white hover:text-blue-200 transition-colors">
@@ -288,17 +295,65 @@ function LayoutContent({ cartCount, user, isMobileMenuOpen, setIsMobileMenuOpen,
                 }`}
               >
                 <div className="flex flex-col space-y-1">
+                  {/* Country Selector Mobile */}
+                  <div className="p-2">
+                    <CountrySelector />
+                  </div>
                   {/* Language Toggle Button Mobile */}
                   <button 
                     onClick={toggleLanguage} 
-                    className="flex items-center p-2 text-white text-sm hover:text-blue-200"
+                    className="flex items-center p-2 text-white text-sm hover:text-blue-200 hover:bg-blue-800/20 rounded-md transition-colors"
                   >
                     <Globe className="h-4 w-4 mr-2" />
                     {language === 'en' ? 'Español' : 'English'}
                   </button>
                   <Link
-                    href="/settings"
-                    className="flex items-center p-2 text-white text-sm hover:text-blue-200"
+                    href="/"
+                    className="flex items-center p-2 text-white text-sm hover:text-blue-200 hover:bg-blue-800/20 rounded-md transition-colors"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-4 w-4 mr-2"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+                      />
+                    </svg>
+                    {t('home')}
+                  </Link>
+                  
+                  <Link
+                    href="/products"
+                    className="flex items-center p-2 text-white text-sm hover:text-blue-200 hover:bg-blue-800/20 rounded-md transition-colors"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-4 w-4 mr-2"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
+                      />
+                    </svg>
+                    {t('products')}
+                  </Link>
+                  
+                  <Link
+                    href="/checkout"
+                    className="flex items-center p-2 text-white text-sm hover:text-blue-200 hover:bg-blue-800/20 rounded-md transition-colors"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     <svg
@@ -324,7 +379,7 @@ function LayoutContent({ cartCount, user, isMobileMenuOpen, setIsMobileMenuOpen,
                   {user?.status === 'active' && (
                     <Link
                       href="/settings"
-                      className="flex items-center p-2 text-white text-sm hover:text-blue-200"
+                      className="flex items-center p-2 text-white text-sm hover:text-blue-200 hover:bg-blue-800/20 rounded-md transition-colors"
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
                       <svg
@@ -410,7 +465,7 @@ function LayoutContent({ cartCount, user, isMobileMenuOpen, setIsMobileMenuOpen,
                         handleSignOut();
                         setIsMobileMenuOpen(false);
                       }}
-                      className="flex items-center p-2 text-white w-full text-left text-sm"
+                      className="flex items-center p-2 text-white w-full text-left text-sm hover:text-blue-200 hover:bg-blue-800/20 rounded-md transition-colors"
                     >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -433,7 +488,7 @@ function LayoutContent({ cartCount, user, isMobileMenuOpen, setIsMobileMenuOpen,
                   {!session && (
                     <Link
                       href="/login"
-                      className="flex items-center p-2 text-white text-sm hover:text-blue-200"
+                      className="flex items-center p-2 text-white text-sm hover:text-blue-200 hover:bg-blue-800/20 rounded-md transition-colors"
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
                       <svg

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="667" viewBox="0 0 1000 667">
+  <!-- Yellow (top half) -->
+  <rect width="1000" height="333.5" fill="#FCD116"/>
+  
+  <!-- Blue (middle quarter) -->
+  <rect width="1000" height="167" y="333.5" fill="#003893"/>
+  
+  <!-- Red (bottom quarter) -->
+  <rect width="1000" height="167" y="500.5" fill="#CE1126"/>
+</svg>

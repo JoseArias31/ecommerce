@@ -8,6 +8,8 @@ import AddToCartButton from "@/components/add-to-cart-button"
 import { ArrowRight, Star, TrendingUp, Package, Clock, Heart, ShoppingBag } from "lucide-react"
 import { useQuantityStore } from "@/store/quantityStore"
 import ReviewsCarousel from "@/components/ReviewsCarousel"
+import { useCountry } from "@/contexts/CountryContext"
+import { fetchProductsByCountry, formatPriceForCountry } from "@/lib/countryUtils"
 
 export default function Home() {
   const [isMounted, setIsMounted] = useState(false)
@@ -23,6 +25,7 @@ export default function Home() {
   const [email, setEmail] = useState('')
   const [name, setName] = useState('')
   const [subscribeStatus, setSubscribeStatus] = useState('idle')
+  const { country, getCountryData } = useCountry()
 
   useEffect(() => {
     // Function to sum all quantities in the cart
@@ -49,40 +52,65 @@ export default function Home() {
   // Fetch products and their first image
   useEffect(() => {
     const fetchProducts = async () => {
-      // Fetch all products
-      const { data: products, error } = await supabase
-        .from("products")
-        .select("*, categories(name)"); // Join categories table to get name
-      if (error) {
-        console.error("Error fetching products:", error);
-        return;
-      }
-      // Fetch all images for these products
-      const productIds = products.map(p => p.id);
-      const { data: images, error: imgError } = await supabase.from("productimages").select("id, product_id, url");
-      if (imgError) {
-        console.error("Error fetching images:", imgError);
-      }
-      // Map first image and category name to each product
-      const productsWithImage = products.map(product => {
-        const imgs = (images || []).filter(img => img.product_id === product.id);
-        return {
-          ...product,
-          image: imgs[0]?.url || "/placeholder.svg",
-          category: product.categories?.name || null, // Map category name
-        };
-      });
-      setAllProducts(productsWithImage);
-      setFilteredProducts(productsWithImage);
-
-      // Fetch categories from DB
-      const { data: cats, error: catError } = await supabase.from("categories").select("name");
-      if (!catError && cats) {
-        setCategories(["all", ...cats.map(cat => cat.name)]);
+      try {
+        // Use the country-specific fetch function
+        const { data: products, error } = await fetchProductsByCountry(country, {
+          sortBy: 'name',
+          ascending: true
+        });
+        
+        if (error) {
+          console.error("Error fetching products:", error);
+          return;
+        }
+        
+        // Fetch category details for the products
+        if (products && products.length > 0) {
+          const { data: productsWithCategories, error: catError } = await supabase
+            .from("products")
+            .select("*, categories(name)")
+            .in('id', products.map(p => p.id));
+            
+          if (catError) throw catError;
+          
+          // Fetch all images for these products
+          const productIds = productsWithCategories.map(p => p.id);
+          const { data: images, error: imgError } = await supabase.from("productimages").select("id, product_id, url");
+          if (imgError) {
+            console.error("Error fetching images:", imgError);
+          }
+          
+          // Map first image and category name to each product
+          const productsWithImage = productsWithCategories.map(product => {
+            const imgs = (images || []).filter(img => img.product_id === product.id);
+            return {
+              ...product,
+              image: imgs[0]?.url || "/placeholder.svg",
+              category: product.categories?.name || null, // Map category name
+            };
+          });
+          
+          setAllProducts(productsWithImage);
+          setFilteredProducts(productsWithImage);
+          
+          // No need to set hero product here, we'll use a computed value
+        } else {
+          setAllProducts([]);
+          setFilteredProducts([]);
+        }
+        
+        // Fetch categories from DB
+        const { data: cats, error: catError } = await supabase.from("categories").select("name");
+        if (!catError && cats) {
+          setCategories(["all", ...cats.map(cat => cat.name)]);
+        }
+      } catch (err) {
+        console.error('Error in fetchProducts:', err);
       }
     };
+    
     fetchProducts();
-  }, [])
+  }, [country])
 
   useEffect(() => {
     let result = allProducts
@@ -110,17 +138,12 @@ export default function Home() {
   // New arrivals (last 4 products for demo)
   const newArrivals = [...allProducts].reverse().slice(0, 4)
 
-  // Always loop hero images from all products, not filtered
-  const [randomHeroIndex, setRandomHeroIndex] = useState(() => Math.floor(Math.random() * allProducts.length));
-  useEffect(() => {
-    if (!allProducts.length) return;
-    const interval = setInterval(() => {
-      setRandomHeroIndex(Math.floor(Math.random() * allProducts.length));
-    }, 4000);
-    return () => clearInterval(interval);
-  }, [allProducts.length]);
-
-  const heroProduct = allProducts.length ? allProducts[randomHeroIndex] : null;
+  // Best selling products (random selection for demo)
+  const bestSellers = [...allProducts].sort(() => 0.5 - Math.random()).slice(0, 4)
+  
+  // Hero product (random selection from filtered products)
+  const heroProduct = filteredProducts.length > 0 ? 
+    filteredProducts[Math.floor(Math.random() * filteredProducts.length)] : null
 
   // Fetch ratings for all products
   useEffect(() => {
@@ -262,7 +285,7 @@ export default function Home() {
                   </div>
                   <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-4 text-white">
                     <h3 className="text-xl font-bold">{heroProduct?.name}</h3>
-                    <p className="text-sm">${heroProduct?.price ?? '0.00'}</p>
+                    <p className="text-sm">{heroProduct ? formatPriceForCountry(heroProduct.price, getCountryData()) : '$0.00'}</p>
                     <Link href={`/products/${heroProduct?.id || ''}`} className="underline text-sm">
                       View Details
                     </Link>
@@ -366,21 +389,19 @@ export default function Home() {
                       {product.name}
                     </h3>
                   </Link>
-                  {/* Star rating */}
-                  <div className="flex items-center gap-0.5 sm:gap-1 mb-0.5 sm:mb-1">
-                    {[...Array(5)].map((_, i) => (
-                      <Star
-                        key={i}
-                        className={`h-2.5 w-2.5 sm:h-3 sm:w-3 md:h-4 md:w-4 ${
-                          i < Math.round(productRatings[product.id]?.average || 0)
-                            ? "text-yellow-400"
-                            : "text-gray-200"
-                        }`}
-                      />
-                    ))}
-                    <span className="text-[10px] sm:text-xs text-gray-500 ml-0.5 sm:ml-1">
-                      {productRatings[product.id]?.average || 0} ({productRatings[product.id]?.count || 0})
-                    </span>
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-0.5">
+                      {[...Array(5)].map((_, i) => (
+                        <Star
+                          key={i}
+                          className={`h-3 w-3 ${i < Math.round(productRatings[product.id]?.average || 0) ? "text-yellow-400 fill-yellow-400" : "text-gray-200"}`}
+                        />
+                      ))}
+                      <span className="text-xs text-gray-500 ml-1">
+                        {productRatings[product.id]?.count || 0}
+                      </span>
+                    </div>
+                    <span className="font-bold text-gray-900">{formatPriceForCountry(product.price, getCountryData())}</span>
                   </div>
                   <p className="text-[10px] sm:text-xs md:text-sm text-gray-500 mb-1 sm:mb-2 line-clamp-2">
                     {product.description}
@@ -388,7 +409,7 @@ export default function Home() {
                   
                   <div className="flex items-center justify-between mt-auto">
                     <span className="text-base sm:text-lg md:text-xl font-extrabold text-gray-900 drop-shadow-sm">
-                      ${product.price}
+                      {formatPriceForCountry(product.price, getCountryData())}
                     </span>
                     <span className="text-[8px] sm:text-xs px-1 sm:px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-700 font-semibold border border-blue-100">
                       In Stock

@@ -16,6 +16,7 @@ export default function AdminPage() {
   const [isEditing, setIsEditing] = useState(false)
   const [currentProduct, setCurrentProduct] = useState(null)
   const [productImages, setProductImages] = useState([]); // Store images with alt text per product
+  const [countries, setCountries] = useState([]); // Add state for countries
 
   const imageInputRef = useRef(null);
 
@@ -63,12 +64,19 @@ export default function AdminPage() {
     console.log('Fetched categories:', data)
     if (error) console.error("Error fetching categories:", error)
     else setCategories(data)
- 
+  }
+  
+  // Fetch available countries
+  const fetchCountries = async () => {
+    const { data, error } = await supabase.from("countries").select("code,name")
+    if (error) console.error("Error fetching countries:", error)
+    else setCountries(data)
   }
 
   useEffect(() => {
     fetchProducts()
     fetchCategories()
+    fetchCountries() // Add this to fetch countries on mount
   }, [])
 
   // When editing, fetch images for this product
@@ -76,6 +84,7 @@ export default function AdminPage() {
     setCurrentProduct({
       ...product,
       category_id: product.category_id != null ? product.category_id.toString() : "",
+      country_availability: product.country_availability || [], // Add this line
     });
     // Fetch images for this product
     const { data, error } = await supabase
@@ -119,6 +128,7 @@ export default function AdminPage() {
       price: 0,
       category_id: categories.length > 0 ? categories[0].id.toString() : "",
       images: [], // For new images
+      country_availability: [], // Add this line
     };
     setCurrentProduct(newProduct);
     setIsEditing(true);
@@ -135,6 +145,7 @@ export default function AdminPage() {
       description: currentProduct.description,
       price: currentProduct.price,
       category_id: currentProduct.category_id,
+      country_availability: currentProduct.country_availability || [], // Add this line
     };
     try {
       let productId = currentProduct.id;
@@ -229,6 +240,29 @@ export default function AdminPage() {
       ...prev,
       images: prev.images.filter((img, i) => i !== index)
     }));
+  }
+
+  // Handle country selection
+  const handleCountryChange = (e) => {
+    const { value, checked } = e.target;
+    
+    setCurrentProduct(prev => {
+      const currentCountries = prev.country_availability || [];
+      
+      if (checked) {
+        // Add country if checked and not already in the array
+        return {
+          ...prev,
+          country_availability: [...currentCountries, value]
+        };
+      } else {
+        // Remove country if unchecked
+        return {
+          ...prev,
+          country_availability: currentCountries.filter(country => country !== value)
+        };
+      }
+    });
   }
 
   // Add state for category modal
@@ -360,6 +394,34 @@ export default function AdminPage() {
                       </option>
                     ))}
                   </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">Country Availability</label>
+                  <div className="border rounded p-2 max-h-32 overflow-y-auto">
+                    {countries.length === 0 ? (
+                      <p className="text-sm text-gray-500">No countries available</p>
+                    ) : (
+                      countries.map((country) => (
+                        <div key={country.code} className="flex items-center mb-1">
+                          <input
+                            type="checkbox"
+                            id={`country-${country.code}`}
+                            value={country.code}
+                            checked={(currentProduct.country_availability || []).includes(country.code)}
+                            onChange={handleCountryChange}
+                            className="mr-2"
+                          />
+                          <label htmlFor={`country-${country.code}`} className="text-sm">
+                            {country.name}
+                          </label>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Select countries where this product will be available
+                  </p>
                 </div>
 
                 <div>

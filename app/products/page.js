@@ -7,6 +7,8 @@ import { supabase } from "@/lib/supabaseClient";
 import AddToCartButton from "@/components/add-to-cart-button";
 import { Star, Heart, Filter } from "lucide-react";
 import { useQuantityStore } from "@/store/quantityStore";
+import { useCountry } from "@/contexts/CountryContext";
+import { fetchProductsByCountry, formatPriceForCountry } from "@/lib/countryUtils";
 
 const PLACEHOLDER = "/placeholder.svg";
 
@@ -19,16 +21,45 @@ export default function ProductsPage() {
   const [showFilter, setShowFilter] = useState(false);
   const { getQuantity } = useQuantityStore();
   const [productRatings, setProductRatings] = useState({});
+  const { country, getCountryData } = useCountry();
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchProducts = async () => {
-      const { data: products, error } = await supabase.from("products").select("*, categories(name)");
-      if (!error && products) setProducts(products);
+      setLoading(true);
+      try {
+        // Use the country-specific fetch function
+        const { data: products, error } = await fetchProductsByCountry(country, {
+          sortBy: 'name',
+          ascending: true
+        });
+        
+        if (error) throw error;
+        
+        // Fetch category details for the products
+        if (products && products.length > 0) {
+          const { data: productsWithCategories, error: catError } = await supabase
+            .from("products")
+            .select("*, categories(name)")
+            .in('id', products.map(p => p.id));
+            
+          if (catError) throw catError;
+          setProducts(productsWithCategories || []);
+        } else {
+          setProducts([]);
+        }
+      } catch (err) {
+        console.error('Error fetching products:', err);
+      } finally {
+        setLoading(false);
+      }
     };
+    
     const fetchCategories = async () => {
       const { data: cats } = await supabase.from("categories").select("name");
       if (cats) setCategories(["all", ...cats.map((c) => c.name)]);
     };
+    
     const fetchImages = async () => {
       const { data: imgs } = await supabase.from("productimages").select("product_id, url");
       if (imgs) {
@@ -39,10 +70,11 @@ export default function ProductsPage() {
         setProductImages(imgMap);
       }
     };
+    
     fetchProducts();
     fetchCategories();
     fetchImages();
-  }, []);
+  }, [country]); // Re-fetch when country changes
 
   // Fetch ratings for all products
   useEffect(() => {
@@ -129,8 +161,13 @@ export default function ProductsPage() {
       </section>
 
       {/* Products Grid */}
-      <section className="container mx-auto max-w-8xl  py-6 ">
-        {filtered.length === 0 ? (
+      <section className="container mx-auto max-w-7xl p-4">
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-12">
+            <div className="w-16 h-16 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+            <p className="mt-4 text-gray-600">Loading products...</p>
+          </div>
+        ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center py-24">
             <Image
               src={PLACEHOLDER}
@@ -210,7 +247,7 @@ export default function ProductsPage() {
                   {/* Price and Add to Cart */}
                   <div className="mt-1 flex flex-col gap-2 px-2">
                     <span className="text-base sm:text-lg md:text-xl font-bold text-gray-900 self-start">
-                      ${product.price}
+                      {formatPriceForCountry(product.price, getCountryData())}
                     </span>
                     <div className="flex flex-row items-center gap-2 w-full">
                       <AddToCartButton

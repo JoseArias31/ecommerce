@@ -7,6 +7,9 @@ import { supabase } from "@/lib/supabaseClient"
 import { ArrowLeft, Heart, Share2, Truck, ShieldCheck, RotateCcw, Star, ChevronRight, ChevronLeft, X, Check } from "lucide-react"
 import AddToCartButton from "@/components/add-to-cart-button"
 import { useQuantityStore } from "@/store/quantityStore"
+import { useCountry } from "@/contexts/CountryContext"
+import { useRouter } from "next/navigation"
+import { formatPriceForCountry } from "@/lib/countryUtils"
 
 export default function ProductPage({ params }) {
   const { id } = params
@@ -30,6 +33,9 @@ export default function ProductPage({ params }) {
   const quantity = useQuantityStore((state) => state.quantities[product?.id] || 1)
   const setQuantity = useQuantityStore((state) => state.setQuantity)
   const [showShareSuccess, setShowShareSuccess] = useState(false)
+  const [productNotAvailable, setProductNotAvailable] = useState(false)
+  const { country, getCountryData } = useCountry()
+  const router = useRouter()
 
   useEffect(() => {
     const fetchData = async () => {
@@ -40,6 +46,14 @@ export default function ProductPage({ params }) {
         setProduct(null);
         setProductImages([]);
       } else {
+        // Check if product is available in the selected country
+        if (!product.country_availability || !product.country_availability.includes(country)) {
+          setProductNotAvailable(true);
+          setProduct(null);
+          setProductImages([]);
+          return;
+        }
+        
         setProduct(product);
         // Fetch images for this product
         const { data: images, error: imgError } = await supabase.from("productimages").select("id, url, alt").eq("product_id", id);
@@ -50,8 +64,13 @@ export default function ProductPage({ params }) {
           setProductImages(images);
         }
       }
-      // Fetch related products
-      const { data: relData, error: relError } = await supabase.from("products").select("*").neq("id", id).limit(4);
+      // Fetch related products in the same country
+      const { data: relData, error: relError } = await supabase
+        .from("products")
+        .select("*")
+        .neq("id", id)
+        .contains('country_availability', [country])
+        .limit(4);
       if (relError) console.error("Error fetching related products:", relError);
       else {
         setRelatedProducts(relData);
@@ -325,15 +344,30 @@ export default function ProductPage({ params }) {
 
   if (loading) {
     return (
-      <div className="container mx-auto px-4 py-12 text-center">
-        <span>Loading...</span>
+      <div className="container mx-auto px-4 py-8">
+        {loading ? (
+          <div className="flex justify-center items-center h-96">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-900"></div>
+          </div>
+        ) : !product ? (
+          <div className="text-center py-16">
+            <h1 className="text-2xl font-bold mb-4">
+              {productNotAvailable 
+                ? `This product is not available in your selected country (${getCountryData().name})` 
+                : "Product not found"}
+            </h1>
+            <Link href="/products" className="text-blue-600 hover:underline">
+              Back to products
+            </Link>
+          </div>
+        ) : null}
       </div>
     )
   }
 
   if (!product) {
     return (
-      <div className="container mx-auto px-4 py-12 text-center">
+      <div className="container mx-auto px-4 py-12">
         <h1 className="text-2xl font-bold mb-4">Product not found</h1>
         <Link href="/" className="text-blue-600 hover:underline">
           Return to home
@@ -747,7 +781,7 @@ export default function ProductPage({ params }) {
                 />
               </div>
               <h3 className="font-medium group-hover:underline">{relatedProduct.name}</h3>
-              <p className="text-gray-700">${relatedProduct.price.toFixed(2)}</p>
+              <p className="text-gray-700">{formatPriceForCountry(relatedProduct.price, getCountryData())}</p>
             </Link>
           ))}
         </div>
