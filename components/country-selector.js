@@ -44,7 +44,7 @@ export default function CountrySelector() {
 
       <div className="absolute top-full right-0 mt-1 w-56 bg-gray-800 shadow-lg rounded-md overflow-hidden opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
         <div className="p-2 border-b border-gray-700 text-xs text-gray-400">
-          {t("selectCountryAndLanguage") || "Select country and language"}
+          {t("Select Country") || "Select country and language"}
         </div>
         {Object.entries(countries).map(([code, data]) => (
           <button

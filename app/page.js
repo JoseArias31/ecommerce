@@ -26,6 +26,10 @@ export default function Home() {
   const [name, setName] = useState('')
   const [subscribeStatus, setSubscribeStatus] = useState('idle')
   const { country, getCountryData } = useCountry()
+  // Carousel state
+  const [currentHeroIndex, setCurrentHeroIndex] = useState(0)
+  const [heroProducts, setHeroProducts] = useState([])
+  const [isHeroAutoPlaying, setIsHeroAutoPlaying] = useState(true)
 
   useEffect(() => {
     // Function to sum all quantities in the cart
@@ -93,11 +97,19 @@ export default function Home() {
           setAllProducts(productsWithImage);
           setFilteredProducts(productsWithImage);
           
-          // No need to set hero product here, we'll use a computed value
+          // Select featured products for hero carousel - only for the current country
+          const featuredProducts = productsWithImage.filter(p => p.image && p.image !== '/placeholder.svg');
+          // Limit to 5 products for the carousel
+          setHeroProducts(featuredProducts.slice(0, 5));
+          
         } else {
           setAllProducts([]);
           setFilteredProducts([]);
+          setHeroProducts([]);
         }
+        
+        // Reset carousel index when country changes
+        setCurrentHeroIndex(0);
         
         // Fetch categories from DB
         const { data: cats, error: catError } = await supabase.from("categories").select("name");
@@ -141,9 +153,22 @@ export default function Home() {
   // Best selling products (random selection for demo)
   const bestSellers = [...allProducts].sort(() => 0.5 - Math.random()).slice(0, 4)
   
-  // Hero product (random selection from filtered products)
-  const heroProduct = filteredProducts.length > 0 ? 
-    filteredProducts[Math.floor(Math.random() * filteredProducts.length)] : null
+  // Hero carousel auto-rotation
+  useEffect(() => {
+    if (!isHeroAutoPlaying || heroProducts.length <= 1) return;
+    
+    const interval = setInterval(() => {
+      setCurrentHeroIndex(prevIndex => 
+        prevIndex === heroProducts.length - 1 ? 0 : prevIndex + 1
+      );
+    }, 4000); // Change every 4 seconds
+    
+    return () => clearInterval(interval);
+  }, [isHeroAutoPlaying, heroProducts.length, country]); // Add country as dependency to reset when country changes
+  
+  // Get current hero product from carousel
+  const heroProduct = heroProducts.length > 0 ? 
+    heroProducts[currentHeroIndex] : null
 
   // Fetch ratings for all products
   useEffect(() => {
@@ -273,23 +298,58 @@ export default function Home() {
             <div className="w-full md:w-1/2 relative">
               <div className="flex items-center justify-center">
                 <div className="w-full h-64 md:h-96 relative overflow-hidden rounded-2xl shadow-lg">
-                  <Image
-                    key={heroProduct?.id || 'fallback'}
-                    src={heroProduct?.image && heroProduct?.image !== '' ? heroProduct.image : '/placeholder.svg'}
-                    alt={heroProduct?.name || ''}
-                    fill
-                    className="object-cover object-center transition-transform duration-700"
-                  />
-                  <div className="absolute top-4 left-4 bg-white text-blue-600 rounded px-2 py-1 text-xs font-semibold shadow">
-                    20% OFF
+                  {/* Hero Carousel with animated transitions */}
+                  <div className="relative w-full h-full">
+                    {heroProducts.map((product, index) => (
+                      <div 
+                        key={product.id} 
+                        className={`absolute inset-0 transition-opacity duration-1000 ${index === currentHeroIndex ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}
+                      >
+                        <Image
+                          src={product.image !== '' ? product.image : '/placeholder.svg'}
+                          alt={product.name || ''}
+                          fill
+                          priority={index === currentHeroIndex}
+                          className="object-cover object-center"
+                        />
+                        
+                        {/* Product details - show only for current slide */}
+                        {index === currentHeroIndex && (
+                          <>
+                            <div className="absolute top-4 left-4 bg-white text-blue-600 rounded px-2 py-1 text-xs font-semibold shadow">
+                              20% OFF
+                            </div>
+                            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-4 text-white">
+                              <h3 className="text-xl font-bold">{product.name}</h3>
+                              <p className="text-sm">{formatPriceForCountry(product.price, getCountryData())}</p>
+                              <Link href={`/products/${product.id}`} className="underline text-sm">
+                                View Details
+                              </Link>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    ))}
                   </div>
-                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-4 text-white">
-                    <h3 className="text-xl font-bold">{heroProduct?.name}</h3>
-                    <p className="text-sm">{heroProduct ? formatPriceForCountry(heroProduct.price, getCountryData()) : '$0.00'}</p>
-                    <Link href={`/products/${heroProduct?.id || ''}`} className="underline text-sm">
-                      View Details
-                    </Link>
-                  </div>
+                  
+                  {/* Carousel Navigation Dots */}
+                  {heroProducts.length > 1 && (
+                    <div className="absolute z-20 bottom-20 left-0 right-0 flex justify-center gap-2">
+                      {heroProducts.map((_, index) => (
+                        <button
+                          key={index}
+                          onClick={() => {
+                            setCurrentHeroIndex(index);
+                            setIsHeroAutoPlaying(false);
+                            // Resume auto-play after 10 seconds
+                            setTimeout(() => setIsHeroAutoPlaying(true), 10000);
+                          }}
+                          className={`w-2 h-2 rounded-full transition-all ${index === currentHeroIndex ? 'bg-white scale-125' : 'bg-white/50'}`}
+                          aria-label={`Go to product ${index + 1}`}
+                        />
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
