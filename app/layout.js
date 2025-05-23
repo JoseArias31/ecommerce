@@ -158,19 +158,21 @@ function LayoutContent({ cartCount, user, isMobileMenuOpen, setIsMobileMenuOpen,
                   </div>
                 </Link>
 
-                {/* Mobile menu button */}
-                <button
-                  onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                  className="lg:hidden text-white p-1"
-                  type="button"
-                  aria-label="Toggle menu"
-                >
-                  {isMobileMenuOpen ? (
-                    <X className="h-5 w-5 sm:h-6 sm:w-6" />
-                  ) : (
-                    <Menu className="h-5 w-5 sm:h-6 sm:w-6" />
-                  )}
-                </button>
+                {/* Mobile menu button - separate from any links */}
+                <div className="lg:hidden">
+                  <button
+                    onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                    className="text-white p-1 rounded hover:bg-blue-800/20"
+                    type="button"
+                    aria-label="Toggle menu"
+                  >
+                    {isMobileMenuOpen ? (
+                      <X className="h-5 w-5 sm:h-6 sm:w-6" />
+                    ) : (
+                      <Menu className="h-5 w-5 sm:h-6 sm:w-6" />
+                    )}
+                  </button>
+                </div>
 
                 {/* Desktop navigation */}
                 <div className="hidden lg:flex items-center space-x-6">
@@ -290,11 +292,11 @@ function LayoutContent({ cartCount, user, isMobileMenuOpen, setIsMobileMenuOpen,
 
               {/* Mobile menu */}
               <div
-                className={`lg:hidden absolute top-full left-0 right-0 bg-[#1a2b3c]/95 backdrop-blur-sm border-b border-[#1a2b3c]/20 shadow-lg transition-all duration-300 ease-in-out ${
-                  isMobileMenuOpen ? 'translate-y-0' : '-translate-y-full'
-                }`}
+                className={`lg:hidden fixed top-16 left-0 right-0 bg-[#1a2b3c]/95 backdrop-blur-sm border-b border-[#1a2b3c]/20 shadow-lg transition-all duration-300 ease-in-out ${
+                  isMobileMenuOpen ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-full pointer-events-none'
+                } z-50`}
               >
-                <div className="flex flex-col space-y-1">
+                <div className="flex flex-col space-y-1 p-3">
                   {/* Country Selector Mobile */}
                   <div className="p-2">
                     <CountrySelector />
