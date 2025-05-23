@@ -5,6 +5,7 @@ import { ShoppingCart } from "lucide-react"
 import Link from "next/link"
 import { useQuantityStore } from "../store/quantityStore"
 import { supabase } from "@/lib/supabaseClient"
+import { useTranslation } from "@/contexts/TranslationContext"
 
 export default function AddToCartButton({ product }) {
   const quantity = useQuantityStore((state) => state.quantities[product.id] || 1)
@@ -12,6 +13,7 @@ export default function AddToCartButton({ product }) {
   const [showCheckout, setShowCheckout] = useState(false)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [showAuthPrompt, setShowAuthPrompt] = useState(false)
+  const { t } = useTranslation()
 
   useEffect(() => {
     // Check authentication status
@@ -81,7 +83,7 @@ export default function AddToCartButton({ product }) {
           onClick={handleAddToCart}
         >
           <ShoppingCart className="h-4 w-4" />
-          Add
+          {t('addToCart')}
         </button>
       </div>
       {showCheckout && (
@@ -90,13 +92,13 @@ export default function AddToCartButton({ product }) {
           onClick={handleCheckoutClick}
           className="block mt-2 px-2.5 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded text-center font-semibold text-xs transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-purple-300 focus:ring-offset-2 active:scale-95 shadow-sm"
         >
-          Go to Checkout
+          {t('checkout')}
         </Link>
       )}
       {showAuthPrompt && (
         <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
           <p className="text-sm text-yellow-800 mb-2">
-            Sign in to get a better shopping experience and track your orders
+            {t('signIn')} to get a better shopping experience and track your orders
           </p>
           <div className="flex gap-2">
             <Link
@@ -104,14 +106,14 @@ export default function AddToCartButton({ product }) {
               className="flex-1 px-3 py-1.5 bg-yellow-500 hover:bg-yellow-600 text-white text-xs font-medium rounded text-center transition-colors"
               onClick={() => setShowAuthPrompt(false)}
             >
-              Sign In
+              {t('signIn')}
             </Link>
             <Link
               href="/checkout"
               className="px-3 py-1.5 text-yellow-800 text-xs font-medium hover:text-yellow-900"
               onClick={() => setShowAuthPrompt(false)}
             >
-              Continue as Guest
+              {t('continueShopping')}
             </Link>
           </div>
         </div>

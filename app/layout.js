@@ -13,6 +13,9 @@ import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 import { PageTransition } from '@/components/page-transitions';
 import { Toaster } from 'react-hot-toast'
+import { TranslationProvider, useTranslation } from '@/contexts/TranslationContext';
+
+// This component is not needed as we're wrapping everything with TranslationProvider
 
 export default function RootLayout({ children }) {
   const [cartCount, setCartCount] = useState(0);
@@ -104,96 +107,80 @@ export default function RootLayout({ children }) {
   }, []);
 
   return (
-    <html lang="en" className="scroll-smooth">
-      <head>
-        <title>The Quick Shop</title>
-        <meta name="description" content="A minimalist e-commerce store" />
-      </head>
-      <body className="min-h-screen flex flex-col">
-        <header className="sticky top-0 z-50 bg-[#092d5d]/90 backdrop-blur-sm border-b border-[#1a2b3c]/20">
-          <div className="container mx-auto px-4">
-            <div className="flex items-center justify-between h-16">
-              <Link href="/" className="relative group flex flex-row items-center">
-                <div className="relative z-10">
-                  <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white">
-                    The Quick Shop
-                  </h1>
-                  <p className="text-xs sm:text-sm text-blue-200/90 text-center -mt-1">Shop Quick, Ship Quicker</p>
-                </div>
-                <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 group-hover:opacity-60 transition-all duration-300 group-hover:rotate-12">
-                  <Image 
-                    src="/logoecommerce.png" 
-                    alt="Logo" 
-                    width={64} 
-                    height={64}
-                    className="object-contain brightness-0 invert"
-                  />
-                </div>
-              </Link>
+    <TranslationProvider>
+      <LayoutContent 
+        cartCount={cartCount} 
+        user={user} 
+        isMobileMenuOpen={isMobileMenuOpen} 
+        setIsMobileMenuOpen={setIsMobileMenuOpen} 
+        session={session} 
+        handleSignOut={handleSignOut} 
+        children={children} 
+      />
+    </TranslationProvider>
+  );
+}
 
-              {/* Mobile menu button */}
-              <button
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="lg:hidden text-white p-1"
-              >
-                {isMobileMenuOpen ? (
-                  <X className="h-5 w-5 sm:h-6 sm:w-6" />
-                ) : (
-                  <Menu className="h-5 w-5 sm:h-6 sm:w-6" />
-                )}
-              </button>
-
-              {/* Desktop navigation */}
-              <div className="hidden lg:flex items-center space-x-6">
-                <Link href="/checkout" className="text-white hover:text-blue-200 transition-colors">
-                  <div className="p-2 relative">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <circle cx="8" cy="21" r="1"></circle>
-                      <circle cx="19" cy="21" r="1"></circle>
-                      <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"></path>
-                    </svg>
-                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
-                      {cartCount}
-                    </span>
+// This component is inside the TranslationProvider and can access translations
+function LayoutContent({ cartCount, user, isMobileMenuOpen, setIsMobileMenuOpen, session, handleSignOut, children }) {
+  // Now we can safely use the translation hook
+  const { t, language, toggleLanguage } = useTranslation();
+  
+  return (
+      <html lang={language} className="scroll-smooth">
+        <head>
+          <title>{t('store')}</title>
+          <meta name="description" content="A minimalist e-commerce store" />
+        </head>
+        <body className="min-h-screen flex flex-col">
+          <header className="sticky top-0 z-50 bg-[#092d5d]/90 backdrop-blur-sm border-b border-[#1a2b3c]/20">
+            <div className="container mx-auto px-4">
+              <div className="flex items-center justify-between h-16">
+                <Link href="/" className="relative group flex flex-row items-center">
+                  <div className="relative z-10">
+                    <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white">
+                      {t('store')}
+                    </h1>
+                    <p className="text-xs sm:text-sm text-blue-200/90 text-center -mt-1">Shop Quick, Ship Quicker</p>
+                  </div>
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 group-hover:opacity-60 transition-all duration-300 group-hover:rotate-12">
+                    <Image 
+                      src="/logoecommerce.png" 
+                      alt="Logo" 
+                      width={64} 
+                      height={64}
+                      className="object-contain brightness-0 invert"
+                    />
                   </div>
                 </Link>
-                
-                {session ? (
-                  <div className="flex items-center gap-2">
-                    {user?.status === 'admin' && (
-                      <Link href="/admin" className="text-white hover:text-blue-200 transition-colors">
-                        <div className="p-2 flex items-center gap-1">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="20"
-                            height="20"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          >
-                            <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                          </svg>
-                          <span className="text-sm">Admin</span>
-                        </div>
-                      </Link>
-                    )}
-                    <button 
-                      onClick={handleSignOut}
-                      className="text-white hover:text-blue-200 p-2 flex items-center gap-1"
-                    >
+
+                {/* Mobile menu button */}
+                <button
+                  onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                  className="lg:hidden text-white p-1"
+                >
+                  {isMobileMenuOpen ? (
+                    <X className="h-5 w-5 sm:h-6 sm:w-6" />
+                  ) : (
+                    <Menu className="h-5 w-5 sm:h-6 sm:w-6" />
+                  )}
+                </button>
+
+                {/* Desktop navigation */}
+                <div className="flex items-center space-x-6">
+                  {/* Language Toggle Button */}
+                  <button 
+                    onClick={toggleLanguage}
+                    className="text-white hover:text-blue-200 transition-colors flex items-center"
+                    aria-label="Toggle language"
+                  >
+                    <Globe className="h-6 w-6" />
+                    <span className="ml-1 text-sm hidden md:inline">{language === 'en' ? 'Español' : 'English'}</span>
+                    <span className="sr-only">Switch to {language === 'en' ? 'Spanish' : 'English'}</span>
+                  </button>
+                  
+                  <Link href="/checkout" className="text-white hover:text-blue-200 transition-colors">
+                    <div className="p-2 relative">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
                         width="20"
@@ -205,58 +192,112 @@ export default function RootLayout({ children }) {
                         strokeLinecap="round"
                         strokeLinejoin="round"
                       >
-                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                        <polyline points="16 17 21 12 16 7"></polyline>
-                        <line x1="21" y1="12" x2="9" y2="12"></line>
+                        <circle cx="8" cy="21" r="1"></circle>
+                        <circle cx="19" cy="21" r="1"></circle>
+                        <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"></path>
                       </svg>
-                      <span className="text-sm">Sign Out</span>
-                    </button>
-                    <Link href={'/settings'}>
-                      <div className="w-8 h-8 rounded-full bg-blue-200/20 flex items-center justify-center text-white">
-                        {user?.username?.charAt(0).toUpperCase() || 
-                         user?.email?.charAt(0).toUpperCase() || 
-                         'U'}
-                      </div>
-                    </Link>
-                  </div>
-                ) : (
-                  <Link href="/login" className="text-white hover:text-blue-200 text-sm transition-colors">
-                    <div className="relative p-2">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="20"
-                        height="20"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
-                        <circle cx="12" cy="7" r="4"></circle>
-                      </svg>
-                      <div className="absolute -top-2 right-0 flex items-center space-x-1 animate-bounce">
-                        <span className="bg-blue-400 text-white text-xs rounded-full px-1 drop-shadow">
-                          Hey!
-                        </span>
-                      </div>
+                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
+                        {cartCount}
+                      </span>
                     </div>
                   </Link>
-                )}
+                  
+                  {session ? (
+                    <div className="flex items-center gap-2">
+                      {user?.status === 'admin' && (
+                        <Link href="/admin" className="text-white hover:text-blue-200 transition-colors">
+                          <div className="p-2 flex items-center gap-1">
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="20"
+                              height="20"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                            <span className="text-sm">{t('admin')}</span>
+                          </div>
+                        </Link>
+                      )}
+                      <button 
+                        onClick={handleSignOut}
+                        className="text-white hover:text-blue-200 p-2 flex items-center gap-1"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="20"
+                          height="20"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                          <polyline points="16 17 21 12 16 7"></polyline>
+                          <line x1="21" y1="12" x2="9" y2="12"></line>
+                        </svg>
+                        <span className="text-sm">{t('signOut')}</span>
+                      </button>
+                      <Link href={'/settings'}>
+                        <div className="w-8 h-8 rounded-full bg-blue-200/20 flex items-center justify-center text-white">
+                          {user?.username?.charAt(0).toUpperCase() || 
+                           user?.email?.charAt(0).toUpperCase() || 
+                           'U'}
+                        </div>
+                      </Link>
+                    </div>
+                  ) : (
+                    <Link href="/login" className="text-white hover:text-blue-200 text-sm transition-colors">
+                      <div className="relative p-2">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="20"
+                          height="20"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+                          <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                        <div className="absolute -top-2 right-0 flex items-center space-x-1 animate-bounce">
+                          <span className="bg-blue-400 text-white text-xs rounded-full px-1 drop-shadow">
+                            Hey!
+                          </span>
+                        </div>
+                      </div>
+                    </Link>
+                  )}
+                </div>
               </div>
-            </div>
 
-            {/* Mobile menu */}
-            <div
-              className={`lg:hidden absolute top-full left-0 right-0 bg-[#1a2b3c]/95 backdrop-blur-sm border-b border-[#1a2b3c]/20 shadow-lg transition-all duration-300 ease-in-out ${
-                isMobileMenuOpen ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2 pointer-events-none"
-              }`}
-            >
-              <div className="container mx-auto px-4 py-2">
+              {/* Mobile menu */}
+              <div
+                className={`lg:hidden absolute top-full left-0 right-0 bg-[#1a2b3c]/95 backdrop-blur-sm border-b border-[#1a2b3c]/20 shadow-lg transition-all duration-300 ease-in-out ${
+                  isMobileMenuOpen ? 'translate-y-0' : '-translate-y-full'
+                }`}
+              >
                 <div className="flex flex-col space-y-1">
+                  {/* Language Toggle Button Mobile */}
+                  <button 
+                    onClick={toggleLanguage} 
+                    className="flex items-center p-2 text-white text-sm hover:text-blue-200"
+                  >
+                    <Globe className="h-4 w-4 mr-2" />
+                    {language === 'en' ? 'Español' : 'English'}
+                  </button>
                   <Link
-                    href="/checkout"
+                    href="/settings"
                     className="flex items-center p-2 text-white text-sm hover:text-blue-200"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
@@ -274,7 +315,7 @@ export default function RootLayout({ children }) {
                         d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
                       />
                     </svg>
-                    Checkout
+                    {t('checkout')}
                     <span className="bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center ml-2">
                       {cartCount}
                     </span>
@@ -358,7 +399,7 @@ export default function RootLayout({ children }) {
                             d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
                           />
                         </svg>
-                        Admin
+                        {t('admin')}
                       </Link>
                     </>
                   )}
@@ -385,7 +426,7 @@ export default function RootLayout({ children }) {
                           d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
                         />
                       </svg>
-                      Sign Out
+                      {t('signOut')}
                     </button>
                   )}
 
@@ -411,10 +452,10 @@ export default function RootLayout({ children }) {
                         <circle cx="12" cy="7" r="4" />
                       </svg>
                       <div className="flex items-center">
-                        Sign In
+                        {t('signIn')}
                         <div className="ml-2 flex items-center animate-bounce">
                           <span className="bg-blue-400 text-white text-xs rounded-full px-1 drop-shadow">
-                            Hey!
+                            {t('hey')}
                           </span>
                         </div>
                       </div>
@@ -423,20 +464,19 @@ export default function RootLayout({ children }) {
                 </div>
               </div>
             </div>
+          </header>
+          <FloatingWhatsApp
+            phoneNumber="16474252986"
+            accountName="The Quick Shop"
+            statusMessage="Typically replies within 2 minutes"
+            avatar='/logowithbackground.png'
+          />
+          <div className="flex flex-col min-h-screen">
+            {children}
+            <Footer />
           </div>
-        </header>
-        <FloatingWhatsApp
-          phoneNumber="16474252986"
-          accountName="The Quick Shop"
-          statusMessage="Typically replies within 2 minutes"
-          avatar='/logowithbackground.png'
-        />
-        <div className="flex flex-col min-h-screen">
-          {children}
-          <Footer />
-        </div>
-        <Toaster position="top-center" />
-      </body>
-    </html>
+          <Toaster position="top-center" />
+        </body>
+      </html>
   );
 }
