@@ -12,11 +12,13 @@ import AdminProtectedRoute from '@/components/AdminProtectedRoute'
 
 export default function AdminPage() {
   const [products, setProducts] = useState([])
+  const [filteredProducts, setFilteredProducts] = useState([])
   const [categories, setCategories] = useState([])
   const [isEditing, setIsEditing] = useState(false)
   const [currentProduct, setCurrentProduct] = useState(null)
   const [productImages, setProductImages] = useState([]); // Store images with alt text per product
   const [countries, setCountries] = useState([]); // Add state for countries
+  const [selectedCountry, setSelectedCountry] = useState("all"); // Default to show all products
 
   const imageInputRef = useRef(null);
 
@@ -55,6 +57,7 @@ export default function AdminPage() {
     if (error) console.error("Error fetching products:", error);
     else {
       setProducts(data);
+      setFilteredProducts(data); // Initially set filtered products to all products
       await fetchProductImages(data);
     }
   }
@@ -78,6 +81,23 @@ export default function AdminPage() {
     fetchCategories()
     fetchCountries() // Add this to fetch countries on mount
   }, [])
+
+  // Filter products based on selected country
+  useEffect(() => {
+    if (selectedCountry === "all") {
+      setFilteredProducts(products);
+    } else {
+      const filtered = products.filter(product => {
+        // If country_availability is null or empty, don't show when filtering by country
+        if (!product.country_availability || product.country_availability.length === 0) {
+          return false;
+        }
+        // Check if the selected country is in the product's country_availability array
+        return product.country_availability.includes(selectedCountry);
+      });
+      setFilteredProducts(filtered);
+    }
+  }, [selectedCountry, products])
 
   // When editing, fetch images for this product
   const handleEdit = async (product) => {
@@ -294,6 +314,44 @@ export default function AdminPage() {
     <AdminProtectedRoute>
       <div className="container mx-auto px-4 py-8">
         <h1 className="text-2xl font-bold mb-4">Admin Dashboard</h1>
+        <div className="mb-6 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+          <div className="flex justify-between items-center w-full sm:w-auto">
+            <h1 className="text-3xl font-bold">Products</h1>
+            <button
+              className="btn-primary flex items-center sm:hidden"
+              onClick={handleAddNew}
+            >
+              <Plus className="w-4 h-4 mr-2" /> Add
+            </button>
+          </div>
+          
+          <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+            <div className="flex items-center">
+              <label htmlFor="countryFilter" className="mr-2 text-sm font-medium">Filter by Country:</label>
+              <select
+                id="countryFilter"
+                value={selectedCountry}
+                onChange={(e) => setSelectedCountry(e.target.value)}
+                className="form-select rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
+              >
+                <option value="all">All Countries</option>
+                {countries.map((country) => (
+                  <option key={country.code} value={country.code}>
+                    {country.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
+            <button
+              className="btn-primary hidden sm:flex items-center"
+              onClick={handleAddNew}
+            >
+              <Plus className="w-4 h-4 mr-2" /> Add New Product
+            </button>
+          </div>
+        </div>
+
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8">
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             <button className="btn-primary flex items-center w-full sm:w-auto justify-center" onClick={handleAddNew}>
@@ -499,7 +557,7 @@ export default function AdminPage() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {products.map((product) => {
+              {filteredProducts.map((product) => {
                 const productImage = productImages.find(img => img.product_id === product.id);
                 return (
                   <tr key={product.id}>
@@ -524,6 +582,22 @@ export default function AdminPage() {
                     <td className="px-2 sm:px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
                         {categories.find(cat => cat.id === product.category_id)?.name || 'Uncategorized'}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        {product.country_availability && product.country_availability.length > 0 ? (
+                          <div className="flex flex-wrap gap-1">
+                            {product.country_availability.map(code => {
+                              const countryName = countries.find(c => c.code === code)?.name || code;
+                              return (
+                                <span key={code} className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                  {countryName.substring(0, 2)}
+                                </span>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <span className="text-red-500">No countries</span>
+                        )}
                       </div>
                     </td>
                     <td className="px-2 sm:px-6 py-4 whitespace-nowrap">
