@@ -25,13 +25,26 @@ export default function AdminPage() {
   const handleImageChange = (e) => {
     if (e.target.files) {
       const filesArray = Array.from(e.target.files);
-      setCurrentProduct(prev => ({
-        ...prev,
-        images: [
-          ...(prev.images || []),
-          ...filesArray.map(file => ({ file, url: URL.createObjectURL(file), alt: "" }))
-        ]
-      }));
+      setCurrentProduct(prev => {
+        // Calculate how many more images we can add
+        const currentImagesCount = (prev.images || []).length;
+        const remainingSlots = 8 - currentImagesCount;
+        
+        // Only take as many new images as we have slots for
+        const newImages = filesArray.slice(0, remainingSlots).map(file => ({ 
+          file, 
+          url: URL.createObjectURL(file), 
+          alt: "" 
+        }));
+        
+        return {
+          ...prev,
+          images: [
+            ...(prev.images || []),
+            ...newImages
+          ]
+        };
+      });
     }
   };
 
@@ -510,19 +523,33 @@ export default function AdminPage() {
                     ref={imageInputRef}
                     onChange={handleImageChange}
                     className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#2a4365] file:text-white hover:file:bg-[#2a4365]/80 mt-2"
+                    disabled={(currentProduct?.images?.length || 0) >= 8}
                   />
+                  <p className={`text-xs mt-1 ${(currentProduct?.images?.length || 0) >= 8 ? 'text-red-500 font-semibold' : 'text-gray-500'}`}>
+                    {(currentProduct?.images?.length || 0)}/8 images 
+                    {(currentProduct?.images?.length || 0) >= 8 && ' - Maximum limit reached'}
+                  </p>
                 </div>
 
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium mb-1">Description</label>
                   <textarea
                     name="description"
-                    value={currentProduct.description}
-                    onChange={handleChange}
+                    value={currentProduct.description || ''}
+                    onChange={(e) => {
+                      // Only update if we're under the limit
+                      if (e.target.value.length <= 500) {
+                        handleChange(e);
+                      }
+                    }}
                     className="w-full p-2 border rounded-md text-sm"
                     rows="3"
                     required
                   />
+                  <p className={`text-xs mt-1 ${(currentProduct?.description?.length || 0) >= 500 ? 'text-red-500 font-semibold' : 'text-gray-500'}`}>
+                    Characters remaining: {500 - (currentProduct?.description?.length || 0)}
+                    {(currentProduct?.description?.length || 0) >= 500 && ' - Maximum limit reached'}
+                  </p>
                 </div>
               </div>
 
