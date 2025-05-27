@@ -510,9 +510,23 @@ export default function ProductPage({ params }) {
 
           {/* Availability */}
           <div className="mt-4">
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-              In Stock
-            </span>
+            {product.stock > 15 ? (
+              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800 border border-green-200">
+                In Stock
+              </span>
+            ) : product.stock > 5 ? (
+              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800 border border-yellow-200">
+                Low Units ({product.stock} remaining)
+              </span>
+            ) : product.stock > 0 ? (
+              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800 border border-red-200">
+                Only {product.stock} {product.stock === 1 ? 'unit' : 'units'} left!
+              </span>
+            ) : (
+              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800 border border-gray-200">
+                Out of Stock
+              </span>
+            )}
           </div>
 
           {/* Description */}

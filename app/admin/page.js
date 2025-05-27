@@ -449,6 +449,22 @@ export default function AdminPage() {
                 </div>
 
                 <div>
+                  <label className="block text-sm font-medium mb-1">Stock</label>
+                  <input
+                    type="number"
+                    name="stock"
+                    value={Number.isNaN(currentProduct.stock) ? "" : currentProduct.stock}
+                    onChange={handleChange}
+                    className="w-full p-2 border rounded-md text-sm"
+                    min="0"
+                    required
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Number of units available for sale
+                  </p>
+                </div>
+
+                <div>
                   <label className="block text-sm font-medium mb-1" htmlFor="category_id">Category</label>
                   <select
                     id="category_id"
@@ -578,6 +594,7 @@ export default function AdminPage() {
               <tr>
                 <th className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[120px]">Product</th>
                 <th className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[80px]">Price</th>
+                <th className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[80px]">Stock</th>
                 <th className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[100px]">Category</th>
                 <th className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[140px]">Created At</th>
                 <th className="px-2 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[90px]">Actions</th>
@@ -605,6 +622,17 @@ export default function AdminPage() {
                     </td>
                     <td className="px-2 sm:px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">${product.price.toFixed(2)}</div>
+                    </td>
+                    <td className="px-2 sm:px-6 py-4 whitespace-nowrap">
+                      {product.stock > 15 ? (
+                        <div className="text-sm text-green-700 bg-green-100 px-2 py-1 rounded-full inline-block">In Stock ({product.stock})</div>
+                      ) : product.stock > 5 ? (
+                        <div className="text-sm text-yellow-700 bg-yellow-100 px-2 py-1 rounded-full inline-block">Low Units ({product.stock})</div>
+                      ) : product.stock > 0 ? (
+                        <div className="text-sm text-red-700 bg-red-100 px-2 py-1 rounded-full inline-block">{product.stock} units left</div>
+                      ) : (
+                        <div className="text-sm text-gray-700 bg-gray-100 px-2 py-1 rounded-full inline-block">Out of Stock</div>
+                      )}
                     </td>
                     <td className="px-2 sm:px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">

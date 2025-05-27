@@ -246,9 +246,28 @@ export default function ProductsPage() {
 
                   {/* Price and Add to Cart */}
                   <div className="mt-1 flex flex-col gap-2 px-2">
-                    <span className="text-base sm:text-lg md:text-xl font-bold text-gray-900 self-start">
-                      {formatPriceForCountry(product.price, getCountryData())}
-                    </span>
+                    <div className="flex justify-between items-center w-full">
+                      <span className="text-base sm:text-lg md:text-xl font-bold text-gray-900">
+                        {formatPriceForCountry(product.price, getCountryData())}
+                      </span>
+                      {product.stock > 15 ? (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-green-50 text-green-700 font-medium border border-green-100">
+                          In Stock
+                        </span>
+                      ) : product.stock > 5 ? (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-50 text-yellow-700 font-medium border border-yellow-100">
+                          Low Units ({product.stock})
+                        </span>
+                      ) : product.stock > 0 ? (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-red-50 text-red-700 font-medium border border-red-100">
+                          {product.stock} {product.stock === 1 ? 'unit' : 'units'} left
+                        </span>
+                      ) : (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-gray-50 text-gray-700 font-medium border border-gray-100">
+                          Out of Stock
+                        </span>
+                      )}
+                    </div>
                     <div className="flex flex-row items-center gap-2 w-full">
                       <AddToCartButton
                         product={product}
@@ -258,6 +277,7 @@ export default function ProductsPage() {
                             : 1
                         }
                         className="w-full px-2 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-medium rounded-md transition-colors min-w-0"
+                        disabled={product.stock <= 0}
                       />
                     </div>
                   </div>

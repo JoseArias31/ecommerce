@@ -471,9 +471,23 @@ export default function Home() {
                     <span className="text-base sm:text-lg md:text-xl font-extrabold text-gray-900 drop-shadow-sm">
                       {formatPriceForCountry(product.price, getCountryData())}
                     </span>
-                    <span className="text-[8px] sm:text-xs px-1 sm:px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-700 font-semibold border border-blue-100">
-                      In Stock
-                    </span>
+                    {product.stock > 15 ? (
+                      <span className="text-[8px] sm:text-xs px-1 sm:px-1.5 py-0.5 rounded-full bg-green-50 text-green-700 font-semibold border border-green-100">
+                        In Stock
+                      </span>
+                    ) : product.stock > 5 ? (
+                      <span className="text-[8px] sm:text-xs px-1 sm:px-1.5 py-0.5 rounded-full bg-yellow-50 text-yellow-700 font-semibold border border-yellow-100">
+                        Low Units ({product.stock})
+                      </span>
+                    ) : product.stock > 0 ? (
+                      <span className="text-[8px] sm:text-xs px-1 sm:px-1.5 py-0.5 rounded-full bg-red-50 text-red-700 font-semibold border border-red-100">
+                        {product.stock} {product.stock === 1 ? 'unit' : 'units'} left
+                      </span>
+                    ) : (
+                      <span className="text-[8px] sm:text-xs px-1 sm:px-1.5 py-0.5 rounded-full bg-gray-50 text-gray-700 font-semibold border border-gray-100">
+                        Out of Stock
+                      </span>
+                    )}
                   </div>
                   <AddToCartButton
                     product={product}
