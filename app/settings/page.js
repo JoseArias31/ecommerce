@@ -1042,25 +1042,66 @@ export default function UserDashboard() {
                     <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
                   </div>
                 ) : (
-                  <div className="space-y-4">
+                  <div className="grid gap-3">
                     {addresses.map((address) => (
-                      <div key={address.id} className="border rounded-lg p-4">
+                      <div 
+                        key={address.id} 
+                        className="border rounded-lg p-3 transition-all hover:shadow-sm border-gray-200"
+                      >
                         <div className="flex justify-between items-start">
-                          <div>
-                            <p className="font-medium">
-                              {address.first_name} {address.last_name}
-                            </p>
-                            <p className="text-gray-600">{address.address}</p>
-                            {address.apartment && (
-                              <p className="text-gray-600">{address.apartment}</p>
+                          <div className="flex-1">
+                            <div className="flex items-center">
+                              <p className="font-medium text-sm">
+                                {address.first_name} {address.last_name}
+                              </p>
+                              {address.country === 'CA' && (
+                                <span className="ml-2">
+                                  <img src="/flags/Canada.svg.svg" alt="Canada" width={16} height={12} className="inline" />
+                                </span>
+                              )}
+                              {address.country === 'CO' && (
+                                <span className="ml-2">
+                                  <img src="/flags/colombia.svg" alt="Colombia" width={16} height={12} className="inline" />
+                                </span>
+                              )}
+                              {address.country === 'US' && (
+                                <span className="ml-2">
+                                  <img src="/flags/us.svg" alt="United States" width={16} height={12} className="inline" />
+                                </span>
+                              )}
+                              {defaultAddressId === address.id && (
+                                <span className="ml-2 bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full">
+                                  Default
+                                </span>
+                              )}
+                            </div>
+                            <div className="mt-1">
+                              <p className="text-gray-600 text-xs">{address.address}
+                              {address.apartment && <span>, Unit: {address.apartment}</span>}</p>
+                              <p className="text-gray-600 text-xs">
+                                {address.city}, {address.state} {address.zip_code}
+                              </p>
+                            </div>
+                            <div className="flex mt-1 text-xs text-gray-500">
+                              <span className="mr-3">{address.email}</span>
+                              <span>{address.phone}</span>
+                            </div>
+                          </div>
+                          <div className="flex space-x-2">
+                            {defaultAddressId !== address.id && (
+                              <button 
+                                onClick={() => handleSetDefaultAddress(address.id)}
+                                className="text-xs text-blue-600 hover:text-blue-800"
+                              >
+                                Set Default
+                              </button>
                             )}
-                            <p className="text-gray-600">
-                              {address.city}, {address.state} {address.zip_code}
-                            </p>
-                            <p className="text-gray-600">{address.country}</p>
-                            <p className="text-gray-600 mt-2">
-                              {address.email} • {address.phone}
-                            </p>
+                            <button 
+                              onClick={() => handleDeleteAddress(address.id)}
+                              className="text-xs text-red-600 hover:text-red-800"
+                            >
+                              Delete
+                            </button>
                           </div>
                         </div>
                       </div>

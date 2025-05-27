@@ -11,11 +11,14 @@ import { EmailTemplate } from "@/components/EmailTemplate";
 import resend from "@/lib/resend";
 import { toast } from "react-hot-toast";
 import { useForm } from "react-hook-form";
+import { useCountry } from "@/contexts/CountryContext";
+import { useTranslation } from "@/contexts/TranslationContext";
 
 // Country list for international shipping
 const countries = [
   { code: "CA", name: "Canada" },
   { code: "US", name: "United States" },
+  { code: "CO", name: "Colombia" },
   // { code: "GB", name: "United Kingdom" },
   // { code: "AU", name: "Australia" },
   // { code: "DE", name: "Germany" },
@@ -25,7 +28,7 @@ const countries = [
   // { code: "IN", name: "India" },
   // { code: "MX", name: "Mexico" },
   // Add more countries as needed
-].sort((a, b) => a.name.localeCompare(b.name))
+].sort((a, b) => a.name.localeCompare(b.name));
 
 const COD_FEE = 5; // You can change to 10 if needed
 
@@ -93,6 +96,11 @@ function CartDisplay({ cart, updateQuantity, setQuantity, removeItem }) {
 
 export default function CheckoutPage() {
   const router = useRouter()
+  const { country, getCountryData } = useCountry()
+  const { language, t } = useTranslation()
+  const countryData = getCountryData()
+  const isColombiaSelected = country === 'CO'
+  
   const [cart, setCart] = useState([])
   const [activeStep, setActiveStep] = useState("shipping")
   const [shippingInfo, setShippingInfo] = useState({
@@ -212,11 +220,18 @@ export default function CheckoutPage() {
         }
         return acc
       }, [])
+      
+      // Filter addresses by current country
+      const countryCode = country; // 'CA' or 'CO'
+      const filteredAddresses = uniqueAddresses.filter(address => {
+        // Include addresses matching current country or with address_type 'both'
+        return address.country === countryCode || address.address_type === 'both';
+      });
 
-      setSavedAddresses(uniqueAddresses)
+      setSavedAddresses(filteredAddresses)
       // Use the most recent address as default
-      if (uniqueAddresses.length > 0) {
-        const mostRecentAddress = uniqueAddresses[0]
+      if (filteredAddresses.length > 0) {
+        const mostRecentAddress = filteredAddresses[0]
         setSelectedAddressId(mostRecentAddress.id)
         setShippingInfo({
           firstName: mostRecentAddress.first_name,
@@ -750,47 +765,88 @@ export default function CheckoutPage() {
       case "shipping":
         return (
           <div className="bg-white rounded-lg shadow-sm border p-6 mb-8">
-            <h2 className="text-xl font-semibold mb-4">Shipping Information</h2>
+            {/* Country-specific message */}
+            <div className={`mb-4 p-3 rounded-md ${isColombiaSelected ? 'bg-yellow-50 border border-yellow-200' : 'bg-blue-50 border border-blue-200'}`}>
+              {isColombiaSelected ? (
+                <p className="text-sm font-medium flex items-center">
+                  <Image 
+                    src="/flags/colombia.svg" 
+                    alt="Colombia Flag" 
+                    width={24} 
+                    height={18} 
+                    className="mr-2"
+                  />
+                  Estás comprando en Colombia. Los precios están en pesos colombianos (COP).
+                </p>
+              ) : (
+                <p className="text-sm font-medium flex items-center">
+                  <Image 
+                    src="/flags/Canada.svg.svg" 
+                    alt="Canada Flag" 
+                    width={24} 
+                    height={18} 
+                    className="mr-2"
+                  />
+                  You are buying in Canada. Prices are in Canadian dollars (CAD).
+                </p>
+              )}
+            </div>
+            
+            <h2 className="text-xl font-semibold mb-4">
+              {isColombiaSelected ? 'Información de Envío' : 'Shipping Information'}
+            </h2>
             
             {/* Address Selection Section */}
             <div className="mb-6">
               {isAuthenticated && savedAddresses.length > 0 && !showNewAddressForm ? (
                 <>
-                  <h3 className="font-medium mb-2">Saved Addresses</h3>
-                  <div className="space-y-2">
+                  <h3 className="font-medium mb-3">{isColombiaSelected ? 'Direcciones Guardadas' : 'Saved Addresses'}</h3>
+                  <div className="grid gap-2">
                     {savedAddresses.map((address) => (
                       <div
                         key={address.id}
-                        className={`border rounded-lg p-4 cursor-pointer ${
-                          selectedAddressId === address.id ? 'border-blue-500 bg-blue-50' : ''
+                        className={`border rounded-lg p-3 cursor-pointer transition-all hover:shadow-sm ${
+                          selectedAddressId === address.id ? 'border-blue-500 bg-blue-50 shadow-sm' : 'border-gray-200'
                         }`}
                         onClick={() => handleAddressSelect(address)}
                       >
                         <div className="flex justify-between items-start">
-                          <div>
-                            <p className="font-medium">
-                              {address.first_name} {address.last_name}
-                            </p>
-                            <p className="text-gray-600">{address.address}</p>
-                           {address.apartment && (
-                              <p className="text-gray-600"> Unit: {address.apartment}</p>
-                            )}
-                            <p className="text-gray-600">
-                              {address.city}, {address.state} {address.zip_code} {address.country}
-                            </p>
-                           
-                            <p className="text-gray-600 mt-2">
-                              Email: {address.email}
-                            </p><p className="text-gray-600 mt-2">
-                             Phone Number: {address.phone}
-                            </p>
+                          <div className="flex-1">
+                            <div className="flex items-center">
+                              <p className="font-medium text-sm">
+                                {address.first_name} {address.last_name}
+                              </p>
+                              {address.country === 'CA' && (
+                                <span className="ml-2">
+                                  <Image src="/flags/Canada.svg.svg" alt="Canada" width={16} height={12} className="inline" />
+                                </span>
+                              )}
+                              {address.country === 'CO' && (
+                                <span className="ml-2">
+                                  <Image src="/flags/colombia.svg" alt="Colombia" width={16} height={12} className="inline" />
+                                </span>
+                              )}
+                            </div>
+                            <div className="mt-1">
+                              <p className="text-gray-600 text-xs">{address.address}
+                              {address.apartment && <span>, {isColombiaSelected ? 'Unidad' : 'Unit'}: {address.apartment}</span>}</p>
+                              <p className="text-gray-600 text-xs">
+                                {address.city}, {address.state} {address.zip_code}
+                              </p>
+                            </div>
+                            <div className="flex mt-1 text-xs text-gray-500">
+                              <span className="mr-3">{address.email}</span>
+                              <span>{address.phone}</span>
+                            </div>
                           </div>
-                          <input
-                            type="radio"
-                            checked={selectedAddressId === address.id}
-                            onChange={() => handleAddressSelect(address)}
-                            className="ml-4"
-                          />
+                          <div className="ml-2">
+                            <input
+                              type="radio"
+                              checked={selectedAddressId === address.id}
+                              onChange={() => handleAddressSelect(address)}
+                              className="h-4 w-4 text-blue-600 focus:ring-blue-500"
+                            />
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -800,7 +856,7 @@ export default function CheckoutPage() {
                     onClick={() => setShowNewAddressForm(true)}
                     className="mt-4 text-blue-600 hover:text-blue-800"
                   >
-                    + Add New Address
+                    {isColombiaSelected ? '+ Añadir Nueva Dirección' : '+ Add New Address'}
                   </button>
                 </>
               ) : (
@@ -808,7 +864,7 @@ export default function CheckoutPage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
-                        First Name
+                        {isColombiaSelected ? 'Nombre' : 'First Name'}
                       </label>
                       <input
                         id="firstName"
@@ -821,7 +877,7 @@ export default function CheckoutPage() {
                     </div>
                     <div>
                       <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
-                        Last Name
+                        {isColombiaSelected ? 'Apellido' : 'Last Name'}
                       </label>
                       <input
                         id="lastName"
@@ -836,7 +892,7 @@ export default function CheckoutPage() {
 
                   <div>
                     <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                      Email
+                      {isColombiaSelected ? 'Correo Electrónico' : 'Email'}
                     </label>
                     <input
                       id="email"
@@ -851,7 +907,7 @@ export default function CheckoutPage() {
 
                   <div>
                     <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-                      Phone Number
+                      {isColombiaSelected ? 'Número de Teléfono' : 'Phone Number'}
                     </label>
                     <input
                       id="phone"
@@ -866,7 +922,7 @@ export default function CheckoutPage() {
 
                   <div>
                     <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-1">
-                      Country/Region
+                      {isColombiaSelected ? 'País/Región' : 'Country/Region'}
                     </label>
                     <select
                       id="country"
@@ -885,7 +941,7 @@ export default function CheckoutPage() {
 
                   <div>
                     <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">
-                      Street Address
+                      {isColombiaSelected ? 'Dirección' : 'Street Address'}
                     </label>
                     <input
                       id="address"
@@ -899,7 +955,7 @@ export default function CheckoutPage() {
 
                   <div>
                     <label htmlFor="apartment" className="block text-sm font-medium text-gray-700 mb-1">
-                      Apartment, suite, etc. (optional)
+                      {isColombiaSelected ? 'Apartamento, suite, etc. (opcional)' : 'Apartment, suite, etc. (optional)'}
                     </label>
                     <input
                       id="apartment"
@@ -913,7 +969,7 @@ export default function CheckoutPage() {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                       <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-1">
-                        City
+                        {isColombiaSelected ? 'Ciudad' : 'City'}
                       </label>
                       <input
                         id="city"
@@ -926,7 +982,7 @@ export default function CheckoutPage() {
                     </div>
                     <div>
                       <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-1">
-                        State/Province
+                        {isColombiaSelected ? 'Departamento' : 'State/Province'}
                       </label>
                       <input
                         id="state"
@@ -939,7 +995,7 @@ export default function CheckoutPage() {
                     </div>
                     <div>
                       <label htmlFor="zipCode" className="block text-sm font-medium text-gray-700 mb-1">
-                        ZIP/Postal Code
+                        {isColombiaSelected ? 'Código Postal' : 'ZIP/Postal Code'}
                       </label>
                       <input
                         id="zipCode"
@@ -957,7 +1013,7 @@ export default function CheckoutPage() {
 
             {/* Billing Address Section - Always visible */}
             <div className="border-t pt-6">
-              <h3 className="font-medium mb-4">Billing Address</h3>
+              <h3 className="font-medium mb-4">{isColombiaSelected ? 'Dirección de Facturación' : 'Billing Address'}</h3>
               <div className="space-y-3">
                 <div className="flex items-center space-x-2">
                   <input
@@ -970,7 +1026,7 @@ export default function CheckoutPage() {
                     className="h-4 w-4 text-black focus:ring-gray-500 border-gray-300"
                   />
                   <label htmlFor="same" className="font-normal cursor-pointer">
-                    Same as shipping address
+                    {isColombiaSelected ? 'Misma que la dirección de envío' : 'Same as shipping address'}
                   </label>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -984,7 +1040,7 @@ export default function CheckoutPage() {
                     className="h-4 w-4 text-black focus:ring-gray-500 border-gray-300"
                   />
                   <label htmlFor="different" className="font-normal cursor-pointer">
-                    Use a different billing address
+                    {isColombiaSelected ? 'Usar una dirección de facturación diferente' : 'Use a different billing address'}
                   </label>
                 </div>
 
@@ -1143,7 +1199,7 @@ export default function CheckoutPage() {
 
             {/* Shipping Method Section - Always visible */}
             <div className="pt-6">
-              <h3 className="font-medium mb-3">Shipping Method</h3>
+              <h3 className="font-medium mb-3">{isColombiaSelected ? 'Método de Envío' : 'Shipping Method'}</h3>
               <div className="space-y-3">
                 <div className="flex items-center justify-between border p-4 rounded-md">
                   <div className="flex items-center space-x-2">
@@ -1157,7 +1213,7 @@ export default function CheckoutPage() {
                       className="h-4 w-4 text-black focus:ring-gray-500 border-gray-300"
                     />
                     <label htmlFor="standard" className="font-normal cursor-pointer">
-                      Standard Shipping (3-5 business days)
+                      {isColombiaSelected ? 'Envío Estándar (3-5 días hábiles)' : 'Standard Shipping (3-5 business days)'}
                     </label>
                   </div>
                   <span className="font-medium">$10.00</span>
@@ -1174,7 +1230,7 @@ export default function CheckoutPage() {
                       className="h-4 w-4 text-black focus:ring-gray-500 border-gray-300"
                     />
                     <label htmlFor="express" className="font-normal cursor-pointer">
-                      Express Shipping (1-2 business days)
+                      {isColombiaSelected ? 'Envío Express (1-2 días hábiles)' : 'Express Shipping (1-2 business days)'}
                     </label>
                   </div>
                   <span className="font-medium">$20.00</span>
