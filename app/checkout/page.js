@@ -221,17 +221,16 @@ export default function CheckoutPage() {
         return acc
       }, [])
       
-      // Filter addresses by current country
-      const countryCode = country; // 'CA' or 'CO'
-      const filteredAddresses = uniqueAddresses.filter(address => {
-        // Include addresses matching current country or with address_type 'both'
-        return address.country === countryCode || address.address_type === 'both';
-      });
-
-      setSavedAddresses(filteredAddresses)
+      // Don't filter addresses here - we'll filter them directly in the render
+      // Just log for debugging purposes
+      console.log('All available addresses:', uniqueAddresses);
+      console.log('Current selected country:', country);
+      
+      // Save all addresses and let the render filter them
+      setSavedAddresses(uniqueAddresses);
       // Use the most recent address as default
-      if (filteredAddresses.length > 0) {
-        const mostRecentAddress = filteredAddresses[0]
+      if (uniqueAddresses.length > 0) {
+        const mostRecentAddress = uniqueAddresses[0]
         setSelectedAddressId(mostRecentAddress.id)
         setShippingInfo({
           firstName: mostRecentAddress.first_name,
@@ -802,7 +801,22 @@ export default function CheckoutPage() {
                 <>
                   <h3 className="font-medium mb-3">{isColombiaSelected ? 'Direcciones Guardadas' : 'Saved Addresses'}</h3>
                   <div className="grid gap-2">
-                    {savedAddresses.map((address) => (
+                    {savedAddresses
+                      .filter(address => {
+                        // Filter addresses directly in the render section
+                        console.log(`Filtering address with country: ${address.country}, current country: ${country}`);
+                        
+                        if (country === 'CA') {
+                          // For Canada, show both Canada and US addresses
+                          return address.country === 'CA' || address.country === 'US';
+                        } else if (country === 'CO') {
+                          // For Colombia, show only Colombia addresses
+                          return address.country === 'CO';
+                        }
+                        // Default case - show all addresses
+                        return true;
+                      })
+                      .map((address) => (
                       <div
                         key={address.id}
                         className={`border rounded-lg p-3 cursor-pointer transition-all hover:shadow-sm ${

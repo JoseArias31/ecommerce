@@ -5,6 +5,7 @@ import { createClient } from "@supabase/supabase-js";
 import { ChevronDown, ChevronUp, User, ShoppingBag } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { toast } from "react-hot-toast";
+import { useCountry } from "@/contexts/CountryContext";
 
 export default function UserDashboard() {
   const [user, setUser] = useState(null);
@@ -14,6 +15,7 @@ export default function UserDashboard() {
   const [shippingAddresses, setShippingAddresses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
+  const { country } = useCountry(); // Get current country from context
   const [newName, setNewName] = useState("");
   const [isUpdatingName, setIsUpdatingName] = useState(false);
   const tabLabels = {
@@ -1043,7 +1045,20 @@ export default function UserDashboard() {
                   </div>
                 ) : (
                   <div className="grid gap-3">
-                    {addresses.map((address) => (
+                    {addresses
+                      .filter(address => {
+                        // Filter addresses by country
+                        if (country === 'CA') {
+                          // For Canada, show both Canada and US addresses
+                          return address.country === 'CA' || address.country === 'US';
+                        } else if (country === 'CO') {
+                          // For Colombia, show only Colombia addresses
+                          return address.country === 'CO';
+                        }
+                        // Default case - show all addresses
+                        return true;
+                      })
+                      .map((address) => (
                       <div 
                         key={address.id} 
                         className="border rounded-lg p-3 transition-all hover:shadow-sm border-gray-200"
