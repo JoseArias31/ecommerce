@@ -396,7 +396,8 @@ export default function CheckoutPage() {
           throw new Error(`Order items creation failed: ${orderItemsError.message}`)
         }
 
-        // Create shipping address
+        // Create shipping address (and potentially billing if same)
+        const addressType = billingAddress === "same" ? "both" : "shipping";
         const { error: shippingError } = await supabase
           .from("shipping_addresses")
           .insert([
@@ -412,6 +413,8 @@ export default function CheckoutPage() {
               first_name: shippingInfo.firstName,
               last_name: shippingInfo.lastName,
               email: shippingInfo.email,
+              phone: shippingInfo.phone,
+              address_type: addressType,
               created_at: new Date().toISOString(),
             },
           ]);
@@ -419,6 +422,35 @@ export default function CheckoutPage() {
         if (shippingError) {
           console.error("Shipping address creation error:", shippingError)
           throw new Error(`Shipping address creation failed: ${shippingError.message}`)
+        }
+        
+        // Create billing address if different from shipping
+        if (billingAddress === "different") {
+          const { error: billingError } = await supabase
+            .from("shipping_addresses")
+            .insert([
+              {
+                order_id: order.id,
+                user_id: user.id,
+                address: billingInfo.address,
+                apartment: billingInfo.apartment,
+                city: billingInfo.city,
+                state: billingInfo.state,
+                zip_code: billingInfo.zipCode,
+                country: billingInfo.country,
+                first_name: billingInfo.firstName,
+                last_name: billingInfo.lastName,
+                email: billingInfo.email,
+                phone: billingInfo.phone,
+                address_type: "billing",
+                created_at: new Date().toISOString(),
+              },
+            ]);
+
+          if (billingError) {
+            console.error("Billing address creation error:", billingError)
+            throw new Error(`Billing address creation failed: ${billingError.message}`)
+          }
         }
 
         // Now create Stripe checkout session
@@ -526,7 +558,8 @@ export default function CheckoutPage() {
         throw new Error(`Payment creation failed: ${paymentError.message}`)
       }
 
-      // Create shipping address
+      // Create shipping address (and potentially billing if same)
+      const addressType = billingAddress === "same" ? "both" : "shipping";
       const { error: shippingError } = await supabase
         .from("shipping_addresses")
         .insert([
@@ -542,6 +575,8 @@ export default function CheckoutPage() {
             first_name: shippingInfo.firstName,
             last_name: shippingInfo.lastName,
             email: shippingInfo.email,
+            phone: shippingInfo.phone,
+            address_type: addressType,
             created_at: new Date().toISOString(),
           },
         ]);
@@ -549,6 +584,35 @@ export default function CheckoutPage() {
       if (shippingError) {
         console.error("Shipping address creation error:", shippingError)
         throw new Error(`Shipping address creation failed: ${shippingError.message}`)
+      }
+      
+      // Create billing address if different from shipping
+      if (billingAddress === "different") {
+        const { error: billingError } = await supabase
+          .from("shipping_addresses")
+          .insert([
+            {
+              order_id: order.id,
+              user_id: user.id,
+              address: billingInfo.address,
+              apartment: billingInfo.apartment,
+              city: billingInfo.city,
+              state: billingInfo.state,
+              zip_code: billingInfo.zipCode,
+              country: billingInfo.country,
+              first_name: billingInfo.firstName,
+              last_name: billingInfo.lastName,
+              email: billingInfo.email,
+              phone: billingInfo.phone,
+              address_type: "billing",
+              created_at: new Date().toISOString(),
+            },
+          ]);
+
+        if (billingError) {
+          console.error("Billing address creation error:", billingError)
+          throw new Error(`Billing address creation failed: ${billingError.message}`)
+        }
       }
 
       // Send email to customer
@@ -648,9 +712,11 @@ export default function CheckoutPage() {
 
   const handleBillingInputChange = (e) => {
     const { name, value } = e.target;
+    // Convert billingFirstName to firstName, etc.
+    const fieldName = name.replace(/^billing/, '').charAt(0).toLowerCase() + name.replace(/^billing/, '').slice(1);
     setBillingInfo(prev => ({
       ...prev,
-      [name]: value
+      [fieldName]: value
     }));
   };
 
