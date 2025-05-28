@@ -35,8 +35,8 @@ const COD_FEE = 5; // You can change to 10 if needed
 // Shipping methods by country
 const shippingMethods = {
   CA: [
-    { id: "local_ca", name: "Local (1–2 Days)", description: "Fast shipping within the same city or nearby areas.", price: 8.00, estimatedDays: "1–2 business days" },
-    { id: "national_ca", name: "National (2–5 Days)", description: "Standard shipping across Canada via trusted couriers.", price: 15.00, estimatedDays: "2–5 business days" },
+    { id: "local_ca", name: "", description: "Fast shipping within the same city or nearby areas.", price: 8.00, estimatedDays: "1–2 business days" },
+    { id: "national_ca", name: "", description: "Standard shipping across Canada via trusted couriers.", price: 15.00, estimatedDays: "2–5 business days" },
     { id: "cod_ca", name: "Cash on Delivery – Toronto & GTA", description: "Pay with cash when you receive your product. Available only in Toronto & GTA.", price: 10.00, estimatedDays: "1–2 business days", isCOD: true }
   ],
   CO: [
@@ -1291,7 +1291,7 @@ export default function CheckoutPage() {
                       />
                       <div>
                         <label htmlFor={method.id} className="font-medium cursor-pointer block">
-                          {method.name} ({method.estimatedDays})
+                          {method.name} {method.estimatedDays}
                         </label>
                         <p className="text-sm text-gray-600 mt-1">{method.description}</p>
                       </div>
