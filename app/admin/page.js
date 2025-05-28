@@ -177,8 +177,9 @@ export default function AdminPage() {
       name: currentProduct.name,
       description: currentProduct.description,
       price: currentProduct.price,
+      stock: parseInt(currentProduct.stock) || 0, // Add stock field with parseInt to ensure it's a number
       category_id: currentProduct.category_id,
-      country_availability: currentProduct.country_availability || [], // Add this line
+      country_availability: currentProduct.country_availability || [],
     };
     try {
       let productId = currentProduct.id;
