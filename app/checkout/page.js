@@ -32,6 +32,24 @@ const countries = [
 
 const COD_FEE = 5; // You can change to 10 if needed
 
+// Shipping methods by country
+const shippingMethods = {
+  CA: [
+    { id: "local_ca", name: "Local (1–2 Days)", description: "Fast shipping within the same city or nearby areas.", price: 8.00, estimatedDays: "1–2 business days" },
+    { id: "national_ca", name: "National (2–5 Days)", description: "Standard shipping across Canada via trusted couriers.", price: 15.00, estimatedDays: "2–5 business days" },
+    { id: "cod_ca", name: "Cash on Delivery – Toronto & GTA", description: "Pay with cash when you receive your product. Available only in Toronto & GTA.", price: 10.00, estimatedDays: "1–2 business days", isCOD: true }
+  ],
+  CO: [
+    { id: "local_co", name: "Local (1–2 días)", description: "Envíos rápidos dentro de la misma ciudad o región principal.", price: 8000, estimatedDays: "1–2 días hábiles" },
+    { id: "national_co", name: "Nacional (2–5 días)", description: "Envíos a cualquier parte del país mediante transportadoras reconocidas.", price: 12000, estimatedDays: "2–5 días hábiles" },
+    { id: "cod_co", name: "Contra Entrega", description: "Pago en efectivo al momento de recibir el producto (ciudades principales).", price: 15000, estimatedDays: "1–3 días hábiles", isCOD: true }
+  ],
+  US: [
+    { id: "standard_us", name: "Standard", description: "Standard shipping across US.", price: 10.00, estimatedDays: "3-5 business days" },
+    { id: "express_us", name: "Express", description: "Express shipping within US.", price: 20.00, estimatedDays: "1-2 business days" }
+  ]
+};
+
 // Add this component at the top of the file, before the main Checkout component
 function CartDisplay({ cart, updateQuantity, setQuantity, removeItem }) {
   return (
@@ -115,7 +133,7 @@ export default function CheckoutPage() {
     zipCode: "",
     country: "CA",
   })
-  const [shippingMethod, setShippingMethod] = useState("standard")
+  const [shippingMethod, setShippingMethod] = useState(isColombiaSelected ? "local_co" : "local_ca")
   const [paymentMethod, setPaymentMethod] = useState("credit")
   const [isProcessing, setIsProcessing] = useState(false)
   const [isComplete, setIsComplete] = useState(false)
@@ -188,7 +206,7 @@ export default function CheckoutPage() {
       existing.apartment === address.apartment &&
       existing.city === address.city &&
       existing.state === address.state &&
-      existing.zip_code === address.zip_code &&
+      existing.zip_code === address.zipCode &&
       existing.country === address.country
     )
   }
@@ -372,13 +390,25 @@ export default function CheckoutPage() {
           throw new Error("User not authenticated")
         }
 
-        // Create order
+        // Get shipping method details to store in the order
+        const availableMethods = shippingMethods[shippingInfo.country] || shippingMethods.CA;
+        const selectedMethod = availableMethods.find(method => method.id === shippingMethod);
+        const shippingMethodDetails = selectedMethod ? {
+          id: selectedMethod.id,
+          name: selectedMethod.name,
+          price: selectedMethod.price,
+          estimated_days: selectedMethod.estimatedDays,
+          is_cod: !!selectedMethod.isCOD
+        } : null;
+        
+        // Create order with enhanced shipping method info
         const { data: order, error: orderError } = await supabase
           .from("orders")
           .insert([{
             user_id: user.id,
             amount: total,
-            shipping_method: shippingMethod,
+            shipping_method: shippingMethodDetails,
+           
             status: "pending", // Will be updated by webhook
             created_at: new Date().toISOString(),
             shipping_info: shippingInfo
@@ -514,6 +544,25 @@ export default function CheckoutPage() {
         throw new Error("User not authenticated")
       }
 
+      // Helper function to get shipping method details
+      const getShippingMethodDetails = (countryCode, methodId) => {
+        const methods = shippingMethods[countryCode] || shippingMethods.CA;
+        const method = methods.find(m => m.id === methodId);
+        
+        if (!method) return null;
+        
+        return {
+          id: method.id,
+          name: method.name,
+          price: method.price,
+          estimated_days: method.estimatedDays,
+          is_cod: !!method.isCOD
+        };
+      };
+      
+      // Get shipping details for the order
+      const shippingMethodDetails = getShippingMethodDetails(shippingInfo.country, shippingMethod);
+      
       // Create order
       const { data: order, error: orderError } = await supabase
         .from("orders")
@@ -521,6 +570,7 @@ export default function CheckoutPage() {
           user_id: user.id,
           amount: total,
           shipping_method: shippingMethod,
+          shipping_method_details: shippingMethodDetails,
           status: isCOD ? "pending" : "completed",
           created_at: new Date().toISOString(),
           shipping_info: shippingInfo
@@ -574,6 +624,7 @@ export default function CheckoutPage() {
 
       // Create shipping address (and potentially billing if same)
       const addressType = billingAddress === "same" ? "both" : "shipping";
+      
       const { error: shippingError } = await supabase
         .from("shipping_addresses")
         .insert([
@@ -591,6 +642,8 @@ export default function CheckoutPage() {
             email: shippingInfo.email,
             phone: shippingInfo.phone,
             address_type: addressType,
+            shipping_method: shippingMethod, // Store the shipping method ID
+            shipping_method_details: shippingMethodDetails, // Store detailed info as JSON
             created_at: new Date().toISOString(),
           },
         ]);
@@ -602,6 +655,9 @@ export default function CheckoutPage() {
       
       // Create billing address if different from shipping
       if (billingAddress === "different") {
+        // Get shipping method details for the billing country
+        const billingShippingMethodDetails = getShippingMethodDetails(billingInfo.country, shippingMethod);
+        
         const { error: billingError } = await supabase
           .from("shipping_addresses")
           .insert([
@@ -619,6 +675,8 @@ export default function CheckoutPage() {
               email: billingInfo.email,
               phone: billingInfo.phone,
               address_type: "billing",
+              shipping_method: shippingMethod, // Store the shipping method ID
+              shipping_method_details: billingShippingMethodDetails, // Store detailed info as JSON
               created_at: new Date().toISOString(),
             },
           ]);
@@ -801,11 +859,10 @@ export default function CheckoutPage() {
                 <>
                   <h3 className="font-medium mb-3">{isColombiaSelected ? 'Direcciones Guardadas' : 'Saved Addresses'}</h3>
                   <div className="grid gap-2">
+                    {/* Create a filtered list first to ensure uniqueness when displaying */}
                     {savedAddresses
                       .filter(address => {
-                        // Filter addresses directly in the render section
-                        console.log(`Filtering address with country: ${address.country}, current country: ${country}`);
-                        
+                        // Filter addresses by country
                         if (country === 'CA') {
                           // For Canada, show both Canada and US addresses
                           return address.country === 'CA' || address.country === 'US';
@@ -816,6 +873,24 @@ export default function CheckoutPage() {
                         // Default case - show all addresses
                         return true;
                       })
+                      // Remove any remaining duplicates that might appear due to cross-country filtering
+                      .reduce((uniqueAddresses, address) => {
+                        // Check if this address (ignoring the country) is already in our list
+                        const isDuplicate = uniqueAddresses.some(a => 
+                          a.first_name === address.first_name &&
+                          a.last_name === address.last_name &&
+                          a.address === address.address &&
+                          a.apartment === address.apartment &&
+                          a.city === address.city &&
+                          a.state === address.state &&
+                          a.zip_code === address.zip_code
+                        );
+                        
+                        if (!isDuplicate) {
+                          uniqueAddresses.push(address);
+                        }
+                        return uniqueAddresses;
+                      }, [])
                       .map((address) => (
                       <div
                         key={address.id}
@@ -1215,40 +1290,33 @@ export default function CheckoutPage() {
             <div className="pt-6">
               <h3 className="font-medium mb-3">{isColombiaSelected ? 'Método de Envío' : 'Shipping Method'}</h3>
               <div className="space-y-3">
-                <div className="flex items-center justify-between border p-4 rounded-md">
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="radio"
-                      id="standard"
-                      name="shippingMethod"
-                      value="standard"
-                      checked={shippingMethod === "standard"}
-                      onChange={() => setShippingMethod("standard")}
-                      className="h-4 w-4 text-black focus:ring-gray-500 border-gray-300"
-                    />
-                    <label htmlFor="standard" className="font-normal cursor-pointer">
-                      {isColombiaSelected ? 'Envío Estándar (3-5 días hábiles)' : 'Standard Shipping (3-5 business days)'}
-                    </label>
+                {/* Display shipping methods based on selected country */}
+                {(shippingMethods[country] || shippingMethods.CA).map((method) => (
+                  <div key={method.id} className="flex items-center justify-between border p-4 rounded-md">
+                    <div className="flex items-start space-x-2">
+                      <input
+                        type="radio"
+                        id={method.id}
+                        name="shippingMethod"
+                        value={method.id}
+                        checked={shippingMethod === method.id}
+                        onChange={() => setShippingMethod(method.id)}
+                        className="h-4 w-4 mt-1 text-black focus:ring-gray-500 border-gray-300"
+                      />
+                      <div>
+                        <label htmlFor={method.id} className="font-medium cursor-pointer block">
+                          {method.name} ({method.estimatedDays})
+                        </label>
+                        <p className="text-sm text-gray-600 mt-1">{method.description}</p>
+                      </div>
+                    </div>
+                    <span className="font-medium">
+                      {country === 'CO' 
+                        ? `$${method.price.toLocaleString('es-CO')}`
+                        : `$${method.price.toFixed(2)}`}
+                    </span>
                   </div>
-                  <span className="font-medium">$10.00</span>
-                </div>
-                <div className="flex items-center justify-between border p-4 rounded-md">
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="radio"
-                      id="express"
-                      name="shippingMethod"
-                      value="express"
-                      checked={shippingMethod === "express"}
-                      onChange={() => setShippingMethod("express")}
-                      className="h-4 w-4 text-black focus:ring-gray-500 border-gray-300"
-                    />
-                    <label htmlFor="express" className="font-normal cursor-pointer">
-                      {isColombiaSelected ? 'Envío Express (1-2 días hábiles)' : 'Express Shipping (1-2 business days)'}
-                    </label>
-                  </div>
-                  <span className="font-medium">$20.00</span>
-                </div>
+                ))}
               </div>
             </div>
 
