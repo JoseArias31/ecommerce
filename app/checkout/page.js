@@ -390,16 +390,10 @@ export default function CheckoutPage() {
           throw new Error("User not authenticated")
         }
 
-        // Get shipping method details to store in the order
+        // Get only the shipping method name to store in the order
         const availableMethods = shippingMethods[shippingInfo.country] || shippingMethods.CA;
         const selectedMethod = availableMethods.find(method => method.id === shippingMethod);
-        const shippingMethodDetails = selectedMethod ? {
-          id: selectedMethod.id,
-          name: selectedMethod.name,
-          price: selectedMethod.price,
-          estimated_days: selectedMethod.estimatedDays,
-          is_cod: !!selectedMethod.isCOD
-        } : null;
+        const shippingMethodName = selectedMethod ? selectedMethod.name : null;
         
         // Create order with enhanced shipping method info
         const { data: order, error: orderError } = await supabase
@@ -407,7 +401,7 @@ export default function CheckoutPage() {
           .insert([{
             user_id: user.id,
             amount: total,
-            shipping_method: shippingMethodDetails,
+            shipping_method: shippingMethodName,
            
             status: "pending", // Will be updated by webhook
             created_at: new Date().toISOString(),
@@ -544,24 +538,19 @@ export default function CheckoutPage() {
         throw new Error("User not authenticated")
       }
 
-      // Helper function to get shipping method details
-      const getShippingMethodDetails = (countryCode, methodId) => {
+      // Helper function to get shipping method name only
+      const getShippingMethodName = (countryCode, methodId) => {
         const methods = shippingMethods[countryCode] || shippingMethods.CA;
         const method = methods.find(m => m.id === methodId);
         
         if (!method) return null;
         
-        return {
-          id: method.id,
-          name: method.name,
-          price: method.price,
-          estimated_days: method.estimatedDays,
-          is_cod: !!method.isCOD
-        };
+        // Return only the name of the shipping method
+        return method.name;
       };
       
-      // Get shipping details for the order
-      const shippingMethodDetails = getShippingMethodDetails(shippingInfo.country, shippingMethod);
+      // Get shipping method name for the order
+      const shippingMethodName = getShippingMethodName(shippingInfo.country, shippingMethod);
       
       // Create order
       const { data: order, error: orderError } = await supabase
@@ -569,8 +558,7 @@ export default function CheckoutPage() {
         .insert([{
           user_id: user.id,
           amount: total,
-          shipping_method: shippingMethod,
-          shipping_method_details: shippingMethodDetails,
+          shipping_method: shippingMethodName, // Store only the name instead of the whole object
           status: isCOD ? "pending" : "completed",
           created_at: new Date().toISOString(),
           shipping_info: shippingInfo
@@ -642,8 +630,7 @@ export default function CheckoutPage() {
             email: shippingInfo.email,
             phone: shippingInfo.phone,
             address_type: addressType,
-            shipping_method: shippingMethod, // Store the shipping method ID
-            shipping_method_details: shippingMethodDetails, // Store detailed info as JSON
+            shipping_method: shippingMethodName, // Store only the shipping method name
             created_at: new Date().toISOString(),
           },
         ]);
@@ -655,8 +642,8 @@ export default function CheckoutPage() {
       
       // Create billing address if different from shipping
       if (billingAddress === "different") {
-        // Get shipping method details for the billing country
-        const billingShippingMethodDetails = getShippingMethodDetails(billingInfo.country, shippingMethod);
+        // Get shipping method name for the billing country
+        const billingShippingMethodName = getShippingMethodName(billingInfo.country, shippingMethod);
         
         const { error: billingError } = await supabase
           .from("shipping_addresses")
@@ -675,8 +662,7 @@ export default function CheckoutPage() {
               email: billingInfo.email,
               phone: billingInfo.phone,
               address_type: "billing",
-              shipping_method: shippingMethod, // Store the shipping method ID
-              shipping_method_details: billingShippingMethodDetails, // Store detailed info as JSON
+              shipping_method: billingShippingMethodName, // Store only the shipping method name
               created_at: new Date().toISOString(),
             },
           ]);

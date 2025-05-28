@@ -576,7 +576,7 @@ export default function UserDashboard() {
                           <div className="flex justify-between items-center">
                             <div>
                               <p className="font-medium">
-                                Order #{order.id.substring(0, 8)}
+                                Order #{order.order_number}
                               </p>
                               <p className="text-sm text-gray-500">
                                 {formatDate(order.created_at)}
@@ -722,7 +722,7 @@ export default function UserDashboard() {
                           >
                             <div>
                               <p className="font-medium">
-                                Order #{order.id.substring(0, 8)}
+                                Order #{order.order_number}
                               </p>
                               <p className="text-sm text-gray-500">
                                 {formatDate(order.created_at)}
@@ -792,8 +792,8 @@ export default function UserDashboard() {
                                         <tr key={item.id}>
                                           <td className="px-4 py-3 whitespace-nowrap">
                                             <div className="text-sm font-medium text-gray-900">
-                                              Product #
-                                              {item.product_id.substring(0, 8)}
+                                            
+                                              {item.name}
                                             </div>
                                           </td>
                                           <td className="px-4 py-3 whitespace-nowrap">
