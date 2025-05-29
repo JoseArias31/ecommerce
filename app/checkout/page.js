@@ -160,6 +160,8 @@ export default function CheckoutPage() {
     state: "",
     zipCode: ""
   });
+  // Add state to track if save address checkbox is checked
+  const [shouldSaveAddress, setShouldSaveAddress] = useState(false);
 
   // Load cart from localStorage on mount
   useEffect(() => {
@@ -355,10 +357,16 @@ export default function CheckoutPage() {
   }
 
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0)
-  const shipping = shippingMethod === "express" ? 20.0 : 10.0
+  
+  // Get the selected shipping method details
+  const selectedShippingMethod = (shippingMethods[country] || shippingMethods.CA)
+    .find(method => method.id === shippingMethod);
+
+  // Calculate shipping cost and COD fee based on the selected method
+  const shipping = selectedShippingMethod?.isCOD ? 0 : selectedShippingMethod?.price || 0
   const taxes = subtotal * 0.08 // Example tax calculation (8%)
-  const isCOD = paymentMethod === "cod" || activeTab === "cod";
-  const codFee = isCOD ? COD_FEE : 0;
+  const isCOD = selectedShippingMethod?.isCOD || false;
+  const codFee = isCOD ? selectedShippingMethod?.price || COD_FEE : 0;
   const total = subtotal + shipping + taxes + codFee
 
   const handleShippingSubmit = (e) => {
@@ -747,6 +755,20 @@ export default function CheckoutPage() {
     }));
   };
 
+  // Add effect to check if selected shipping method is COD
+  useEffect(() => {
+    const selectedShippingMethod = (shippingMethods[country] || shippingMethods.CA)
+      .find(method => method.id === shippingMethod);
+    
+    if (selectedShippingMethod?.isCOD) {
+      setActiveTab('cod');
+      setPaymentMethod('cod');
+    } else if (activeTab === 'cod') {
+      setActiveTab('credit');
+      setPaymentMethod('credit');
+    }
+  }, [shippingMethod, country]);
+
   // Render different steps based on activeStep
   const renderCheckoutStep = () => {
     if (isComplete) {
@@ -781,33 +803,22 @@ export default function CheckoutPage() {
             <div className={`mb-4 p-3 rounded-md ${isColombiaSelected ? 'bg-yellow-50 border border-yellow-200' : 'bg-blue-50 border border-blue-200'}`}>
               {isColombiaSelected ? (
                 <p className="text-sm font-medium flex items-center">
-                  <Image 
-                    src="/flags/colombia.svg" 
-                    alt="Colombia Flag" 
-                    width={24} 
-                    height={18} 
-                    className="mr-2"
-                  />
+                  <Image src="/flags/colombia.svg" alt="Colombia Flag" width={24} height={18} className="mr-2" />
                   Estás comprando en Colombia. Los precios están en pesos colombianos (COP).
                 </p>
               ) : (
                 <p className="text-sm font-medium flex items-center">
-                  <Image 
-                    src="/flags/Canada.svg.svg" 
-                    alt="Canada Flag" 
-                    width={24} 
-                    height={18} 
-                    className="mr-2"
-                  />
+                  <Image src="/flags/Canada.svg.svg" alt="Canada Flag" width={24} height={18} className="mr-2" />
                   You are buying in Canada. Prices are in Canadian dollars (CAD).
                 </p>
               )}
             </div>
-            
+
+            {/* Shipping Information */}
             <h2 className="text-xl font-semibold mb-4">
               {isColombiaSelected ? 'Información de Envío' : 'Shipping Information'}
             </h2>
-            
+
             {/* Address Selection Section */}
             <div className="mb-6">
               {isAuthenticated && savedAddresses.length > 0 && !showNewAddressForm ? (
@@ -1241,13 +1252,35 @@ export default function CheckoutPage() {
               </div>
             </div>
 
-            {/* Shipping Method Section - Always visible */}
-            <div className="pt-6">
-              <h3 className="font-medium mb-3">{isColombiaSelected ? 'Método de Envío' : 'Shipping Method'}</h3>
+            {/* Continue Button - Always visible */}
+            <div className="flex justify-end mt-6">
+              <button
+                type="button"
+                onClick={handleShippingSubmit}
+                className="bg-black text-white px-6 py-2 rounded-md hover:bg-gray-800 transition-colors"
+                disabled={isProcessing}
+              >
+                {isProcessing ? 'Processing...' : isColombiaSelected ? 'Continuar al Pago' : 'Continue to Payment'}
+              </button>
+            </div>
+          </div>
+        )
+
+      case "payment":
+        return (
+          <div className="space-y-6">
+            {/* Shipping Method Selection */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-xl font-semibold mb-4">
+                {isColombiaSelected ? 'Método de Envío' : 'Shipping Method'}
+              </h2>
               <div className="space-y-3">
-                {/* Display shipping methods based on selected country */}
                 {(shippingMethods[country] || shippingMethods.CA).map((method) => (
-                  <div key={method.id} className="flex items-center justify-between border p-4 rounded-md">
+                  <div key={method.id} 
+                    className={`flex items-center justify-between border p-4 rounded-md ${
+                      shippingMethod === method.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
+                    }`}
+                  >
                     <div className="flex items-start space-x-2">
                       <input
                         type="radio"
@@ -1256,11 +1289,11 @@ export default function CheckoutPage() {
                         value={method.id}
                         checked={shippingMethod === method.id}
                         onChange={() => setShippingMethod(method.id)}
-                        className="h-4 w-4 mt-1 text-black focus:ring-gray-500 border-gray-300"
+                        className="h-4 w-4 mt-1 text-blue-500 focus:ring-blue-500 border-gray-300"
                       />
                       <div>
                         <label htmlFor={method.id} className="font-medium cursor-pointer block">
-                          {method.name} {method.estimatedDays}
+                          {method.name || `${method.estimatedDays}`}
                         </label>
                         <p className="text-sm text-gray-600 mt-1">{method.description}</p>
                       </div>
@@ -1275,40 +1308,18 @@ export default function CheckoutPage() {
               </div>
             </div>
 
-            {/* Save Address Checkbox - Always visible if authenticated */}
-            {isAuthenticated && (
-              <div className="flex items-center mt-6">
-                <input
-                  type="checkbox"
-                  id="save_address"
-                  className="mr-2"
-                />
-                <label htmlFor="save_address">Save this address for future orders</label>
-              </div>
-            )}
-            
-            {/* Continue Button - Always visible */}
-            <div className="flex justify-end mt-6">
-              <button
-                type="button"
-                onClick={handleShippingSubmit}
-                className="bg-black text-white px-6 py-2 rounded-md hover:bg-gray-800 transition-colors"
-                disabled={isProcessing}
-              >
-                {isProcessing ? 'Processing...' : 'Continue to Payment'}
-              </button>
-            </div>
-          </div>
-        )
-
-      case "payment":
-        return (
-          <div className="space-y-6">
+            {/* Payment Method Selection */}
             <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-xl font-semibold mb-4">Select Payment Method</h2>
+              <h2 className="text-xl font-semibold mb-4">
+                {isColombiaSelected ? 'Método de Pago' : 'Payment Method'}
+              </h2>
               <div className="space-y-4">
                 {/* Credit Card Option */}
-                <div className={`p-4 border rounded-lg ${activeTab === "credit" ? "border-blue-500" : "border-gray-200"}`}>
+                <div className={`p-4 border rounded-lg ${
+                  activeTab === "credit" ? "border-blue-500" : "border-gray-200"
+                } ${
+                  shippingMethod.includes('cod_') ? "opacity-50 pointer-events-none" : ""
+                }`}>
                   <label className="flex items-center space-x-3 cursor-pointer">
                     <input
                       type="radio"
@@ -1316,29 +1327,36 @@ export default function CheckoutPage() {
                       value="credit"
                       checked={activeTab === "credit"}
                       onChange={(e) => {
-                        setActiveTab(e.target.value)
-                        setPaymentMethod(e.target.value)
+                        setActiveTab(e.target.value);
+                        setPaymentMethod(e.target.value);
                       }}
+                      disabled={shippingMethod.includes('cod_')}
                       className="form-radio text-blue-500"
                     />
                     <span className="flex items-center space-x-2">
                       <CreditCard className="h-5 w-5 text-gray-400" />
-                      <span className="font-medium">Pay with Credit Card</span>
+                      <span className="font-medium">
+                        {isColombiaSelected ? 'Pagar con Tarjeta de Crédito' : 'Pay with Credit Card'}
+                      </span>
                     </span>
                   </label>
-                  {activeTab === "credit" && (
+                  {activeTab === "credit" && !shippingMethod.includes('cod_') && (
                     <button
                       onClick={handlePaymentSubmit}
                       disabled={isProcessing}
                       className="mt-4 w-full bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors disabled:bg-gray-400"
                     >
-                      {isProcessing ? "Processing..." : "Pay Now"}
+                      {isProcessing ? "Processing..." : isColombiaSelected ? 'Pagar Ahora' : 'Pay Now'}
                     </button>
                   )}
                 </div>
 
                 {/* COD Option */}
-                <div className={`p-4 border rounded-lg ${activeTab === "cod" ? "border-blue-500" : "border-gray-200"}`}>
+                <div className={`p-4 border rounded-lg ${
+                  activeTab === "cod" ? "border-blue-500" : "border-gray-200"
+                } ${
+                  !shippingMethod.includes('cod_') ? "opacity-50 pointer-events-none" : ""
+                }`}>
                   <label className="flex items-center space-x-3 cursor-pointer">
                     <input
                       type="radio"
@@ -1346,27 +1364,34 @@ export default function CheckoutPage() {
                       value="cod"
                       checked={activeTab === "cod"}
                       onChange={(e) => {
-                        setActiveTab(e.target.value)
-                        setPaymentMethod(e.target.value)
+                        setActiveTab(e.target.value);
+                        setPaymentMethod(e.target.value);
                       }}
+                      disabled={!shippingMethod.includes('cod_')}
                       className="form-radio text-blue-500"
                     />
                     <span className="flex items-center space-x-2">
                       <Package className="h-5 w-5 text-gray-400" />
-                      <span className="font-medium">Cash on Delivery (COD)</span>
+                      <span className="font-medium">
+                        {isColombiaSelected ? 'Pago Contra Entrega' : 'Cash on Delivery (COD)'}
+                      </span>
                     </span>
                   </label>
-                  {activeTab === "cod" && (
+                  {activeTab === "cod" && shippingMethod.includes('cod_') && (
                     <div className="mt-4 space-y-4">
                       <p className="text-sm text-gray-600">
-                        Pay in cash when your order is delivered. A fee of ${COD_FEE.toFixed(2)} will be added to your order.
+                        {isColombiaSelected
+                          ? `Pague en efectivo cuando reciba su pedido. Se agregará una tarifa de $${COD_FEE.toLocaleString('es-CO')} a su pedido.`
+                          : `Pay in cash when your order is delivered. A fee of $${COD_FEE.toFixed(2)} will be added to your order.`}
                       </p>
                       <button
                         onClick={handlePaymentSubmit}
                         disabled={isProcessing}
                         className="w-full bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition-colors disabled:bg-gray-400"
                       >
-                        {isProcessing ? "Processing..." : "Place Order (Pay Later)"}
+                        {isProcessing 
+                          ? isColombiaSelected ? "Procesando..." : "Processing..." 
+                          : isColombiaSelected ? "Realizar Pedido (Pagar Después)" : "Place Order (Pay Later)"}
                       </button>
                     </div>
                   )}
@@ -1377,9 +1402,9 @@ export default function CheckoutPage() {
         );
 
       default:
-        return null
+        return null;
     }
-  }
+  };
 
   return (
     <div className="container mx-auto px-4 py-12">
@@ -1496,30 +1521,60 @@ export default function CheckoutPage() {
               <div className="lg:col-span-1">
                 {!isComplete && (
                   <div className="bg-gray-50 p-6 rounded-lg sticky top-6">
-                    <h2 className="text-xl font-bold mb-4">Order Summary</h2>
-                    
-                    <div className="space-y-2 mb-4">
-                      <div className="flex justify-between">
-                        <span>Subtotal</span>
-                        <span>${subtotal.toFixed(2)}</span>
+                    <h2 className="text-xl font-bold mb-4">Order Summary</h2>                      <div className="space-y-2 mb-4">
+                        <div className="flex justify-between">
+                          <span>Subtotal</span>
+                          <span>
+                            {country === 'CO' 
+                              ? `$${subtotal.toLocaleString('es-CO')}`
+                              : `$${subtotal.toFixed(2)}`}
+                          </span>
+                        </div>
+                        
+                        {!isCOD && selectedShippingMethod && (
+                          <div className="flex justify-between">
+                            <span>
+                              {isColombiaSelected ? 'Envío' : 'Shipping'} ({selectedShippingMethod.estimatedDays})
+                            </span>
+                            <span>
+                              {country === 'CO'
+                                ? `$${selectedShippingMethod.price.toLocaleString('es-CO')}`
+                                : `$${selectedShippingMethod.price.toFixed(2)}`}
+                            </span>
+                          </div>
+                        )}
+                        
+                        {isCOD && selectedShippingMethod && (
+                          <div className="flex justify-between">
+                            <span>
+                              {isColombiaSelected ? 'Tarifa Contra Entrega' : 'Cash on Delivery Fee'} ({selectedShippingMethod.estimatedDays})
+                            </span>
+                            <span>
+                              {country === 'CO'
+                                ? `$${selectedShippingMethod.price.toLocaleString('es-CO')}`
+                                : `$${selectedShippingMethod.price.toFixed(2)}`}
+                            </span>
+                          </div>
+                        )}
+                        
+                        <div className="flex justify-between">
+                          <span>{isColombiaSelected ? 'Impuestos' : 'Taxes'}</span>
+                          <span>
+                            {country === 'CO'
+                              ? `$${taxes.toLocaleString('es-CO')}`
+                              : `$${taxes.toFixed(2)}`}
+                          </span>
+                        </div>
+                        
+                        <div className="border-t pt-2 mt-2 flex justify-between font-bold">
+                          <span>Total</span>
+                          <span>
+                            {country === 'CO'
+                              ? `$${total.toLocaleString('es-CO')}`
+                              : `$${total.toFixed(2)}`}
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex justify-between">
-                        <span>Shipping</span>
-                        <span>${shipping.toFixed(2)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Taxes</span>
-                        <span>${taxes.toFixed(2)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>COD Fee</span>
-                        <span>{codFee ? `$${codFee.toFixed(2)}` : "-"}</span>
-                      </div>
-                      <div className="border-t pt-2 mt-2 flex justify-between font-bold">
-                        <span>Total</span>
-                        <span>${total.toFixed(2)}</span>
-                      </div>
-                    </div>
 
                     {activeStep === "shipping" && (
                       <CartDisplay 
