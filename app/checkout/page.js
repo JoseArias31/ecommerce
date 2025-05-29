@@ -141,6 +141,7 @@ export default function CheckoutPage() {
   const [billingAddress, setBillingAddress] = useState("same")
   const [paymentStatus, setPaymentStatus] = useState("pending")
   const [order, setOrder] = useState(null)
+
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [showAuthPrompt, setShowAuthPrompt] = useState(false)
   const setQuantity = useQuantityStore((state) => state.setQuantity)
@@ -526,7 +527,7 @@ export default function CheckoutPage() {
       return
     }
     
-    // Handle other payment methods (COD, etc.)
+    // Handle COD payment
     setIsProcessing(true)
     try {
       // Get current user
@@ -542,24 +543,21 @@ export default function CheckoutPage() {
       const getShippingMethodName = (countryCode, methodId) => {
         const methods = shippingMethods[countryCode] || shippingMethods.CA;
         const method = methods.find(m => m.id === methodId);
-        
-        if (!method) return null;
-        
-        // Return only the name of the shipping method
-        return method.name;
+        return method ? method.name : null;
       };
       
       // Get shipping method name for the order
       const shippingMethodName = getShippingMethodName(shippingInfo.country, shippingMethod);
       
-      // Create order
+      // Create order with pending status for COD
       const { data: order, error: orderError } = await supabase
         .from("orders")
         .insert([{
           user_id: user.id,
           amount: total,
-          shipping_method: shippingMethodName, // Store only the name instead of the whole object
-          status: isCOD ? "pending" : "completed",
+          shipping_method: shippingMethodName,
+          status: "pending", // COD orders start as pending
+          
           created_at: new Date().toISOString(),
           shipping_info: shippingInfo
         }])
@@ -588,31 +586,24 @@ export default function CheckoutPage() {
         .from("order_items")
         .insert(orderItems)
 
-      if (orderItemsError) {
-        console.error("Order items creation error:", orderItemsError)
-        throw new Error(`Order items creation failed: ${orderItemsError.message}`)
-      }
+      if (orderItemsError) throw orderItemsError;
 
-      // Create payment record
+      // Create payment record for COD
       const { error: paymentError } = await supabase
         .from("payments")
         .insert([{
           order_id: order.id,
           user_id: user.id,
           amount: total,
-          method: paymentMethod,
-          status: isCOD ? "pending" : "completed",
+          method: "cod",
+          status: "pending", // COD payments start as pending
           created_at: new Date().toISOString()
         }])
 
-      if (paymentError) {
-        console.error("Payment creation error:", paymentError)
-        throw new Error(`Payment creation failed: ${paymentError.message}`)
-      }
+      if (paymentError) throw paymentError;
 
       // Create shipping address (and potentially billing if same)
       const addressType = billingAddress === "same" ? "both" : "shipping";
-      
       const { error: shippingError } = await supabase
         .from("shipping_addresses")
         .insert([
@@ -630,21 +621,15 @@ export default function CheckoutPage() {
             email: shippingInfo.email,
             phone: shippingInfo.phone,
             address_type: addressType,
-            shipping_method: shippingMethodName, // Store only the shipping method name
+            shipping_method: shippingMethodName,
             created_at: new Date().toISOString(),
           },
         ]);
 
-      if (shippingError) {
-        console.error("Shipping address creation error:", shippingError)
-        throw new Error(`Shipping address creation failed: ${shippingError.message}`)
-      }
+      if (shippingError) throw shippingError;
       
-      // Create billing address if different from shipping
       if (billingAddress === "different") {
-        // Get shipping method name for the billing country
         const billingShippingMethodName = getShippingMethodName(billingInfo.country, shippingMethod);
-        
         const { error: billingError } = await supabase
           .from("shipping_addresses")
           .insert([
@@ -662,18 +647,16 @@ export default function CheckoutPage() {
               email: billingInfo.email,
               phone: billingInfo.phone,
               address_type: "billing",
-              shipping_method: billingShippingMethodName, // Store only the shipping method name
+              shipping_method: billingShippingMethodName,
               created_at: new Date().toISOString(),
             },
           ]);
 
-        if (billingError) {
-          console.error("Billing address creation error:", billingError)
-          throw new Error(`Billing address creation failed: ${billingError.message}`)
-        }
+        if (billingError) throw billingError;
       }
 
-      // Send email to customer
+      // Send email notifications
+      // Use the existing email templates for both customer and admin
       const customerEmail = shippingInfo.email;
       const customerEmailData = {
         type: 'customer',
@@ -683,6 +666,7 @@ export default function CheckoutPage() {
           orderId: `#${order.order_number}`,
           amount: total,
           shippingMethod,
+          paymentMethod: "Cash on Delivery",
           items: cart.map(item => ({
             name: item.name,
             quantity: item.quantity,
@@ -691,7 +675,6 @@ export default function CheckoutPage() {
         }
       };
 
-      // Send email to admin
       const adminEmail = 'gojosearias@gmail.com';
       const adminEmailData = {
         type: 'admin',
@@ -701,6 +684,7 @@ export default function CheckoutPage() {
           orderId: `#${order.order_number}`,
           amount: total,
           shippingMethod,
+          paymentMethod: "Cash on Delivery",
           items: cart.map(item => ({
             name: item.name,
             quantity: item.quantity,
@@ -711,13 +695,6 @@ export default function CheckoutPage() {
 
       // Send emails using server-side API route
       try {
-        console.log('Sending email data:', {
-          customerEmail,
-          adminEmail,
-          customerData: customerEmailData,
-          adminData: adminEmailData
-        });
-
         const response = await fetch('/api/send-email', {
           method: 'POST',
           headers: {
@@ -731,31 +708,23 @@ export default function CheckoutPage() {
           }),
         });
 
-        const responseData = await response.json();
-        console.log('Email API response:', responseData);
-
         if (!response.ok) {
           console.error("Failed to send emails via API");
-          console.warn("Emails failed to send, but order will still be processed");
         }
       } catch (emailError) {
         console.error("Email sending error:", emailError);
         console.warn("Emails failed to send, but order will still be processed");
       }
 
-      // Clear cart after successful order and emails sent
+      // Clear cart after successful order
       syncCart([])
       setIsProcessing(false)
       setIsComplete(true)
       setActiveStep("confirmation")
 
     } catch (error) {
-      console.error("Error processing order:", {
-        message: error.message,
-        name: error.name,
-        stack: error.stack
-      })
-      alert(`Error processing your order: ${error.message}. Please try again.`)
+      console.error("Error processing order:", error)
+      toast.error(`Error processing your order: ${error.message}. Please try again.`)
       setIsProcessing(false)
     }
   }
@@ -1334,207 +1303,77 @@ export default function CheckoutPage() {
 
       case "payment":
         return (
-          <form 
-            onSubmit={handlePaymentSubmit} 
-            className="space-y-6"
-            id="payment-form"
-          >
-            <div className="mb-6">
-              <h3 className="font-medium mb-3">Payment Method</h3>
-              <div className="w-full">
-                <div className="flex border-b">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveTab("credit");
-                      setPaymentMethod("credit");
-                    }}
-                    className={`flex-1 py-2 px-4 text-center ${
-                      activeTab === "credit"
-                        ? "border-b-2 border-black font-medium"
-                        : "text-gray-500 hover:text-gray-700"
-                    }`}
-                  >
-                    Credit Card
-                  </button>
-                  {/* <button
-                    type="button"
-                    onClick={() => {
-                      setActiveTab("paypal");
-                      setPaymentMethod("paypal");
-                    }}
-                    className={`flex-1 py-2 px-4 text-center ${
-                      activeTab === "paypal"
-                        ? "border-b-2 border-black font-medium"
-                        : "text-gray-500 hover:text-gray-700"
-                    }`}
-                  >
-                    PayPal
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveTab("apple");
-                      setPaymentMethod("apple");
-                    }}
-                    className={`flex-1 py-2 px-4 text-center ${
-                      activeTab === "apple"
-                        ? "border-b-2 border-black font-medium"
-                        : "text-gray-500 hover:text-gray-700"
-                    }`}
-                  >
-                    Apple Pay
-                  </button> */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveTab("cod");
-                      setPaymentMethod("cod");
-                    }}
-                    className={`flex-1 py-2 px-4 text-center ${
-                      activeTab === "cod"
-                        ? "border-b-2 border-black font-medium bg-yellow-100"
-                        : "text-gray-500 hover:text-gray-700"
-                    }`}
-                  >
-                    Cash on Delivery (COD)
-                  </button>
-                </div>
-                <div className="pt-4">
+          <div className="space-y-6">
+            <div className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-xl font-semibold mb-4">Select Payment Method</h2>
+              <div className="space-y-4">
+                {/* Credit Card Option */}
+                <div className={`p-4 border rounded-lg ${activeTab === "credit" ? "border-blue-500" : "border-gray-200"}`}>
+                  <label className="flex items-center space-x-3 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value="credit"
+                      checked={activeTab === "credit"}
+                      onChange={(e) => {
+                        setActiveTab(e.target.value)
+                        setPaymentMethod(e.target.value)
+                      }}
+                      className="form-radio text-blue-500"
+                    />
+                    <span className="flex items-center space-x-2">
+                      <CreditCard className="h-5 w-5 text-gray-400" />
+                      <span className="font-medium">Pay with Credit Card</span>
+                    </span>
+                  </label>
                   {activeTab === "credit" && (
-                    <div className="space-y-4">
-                      <div className="text-center p-6 border rounded-md">
-                        <p className="mb-4">
-                          You'll be redirected to complete your purchase
-                          securely.
-                        </p>
-                        <div className="justify-self-center">
-                          <button
-                            type="submit"
-                            form="payment-form"
-                            className="justify-center items-center bg-black text-white py-2 px-4 rounded-md hover:bg-gray-800 transition-colors w-full"
-                            disabled={isProcessing}
-                          >
-                            {isProcessing ? (
-                              <span className="flex items-center justify-center">
-                                <svg
-                                  className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  fill="none"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <circle
-                                    className="opacity-25"
-                                    cx="12"
-                                    cy="12"
-                                    r="10"
-                                    stroke="currentColor"
-                                    strokeWidth="4"
-                                  ></circle>
-                                  <path
-                                    className="opacity-75"
-                                    fill="currentColor"
-                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                  ></path>
-                                </svg>
-                                Processing...
-                              </span>
-                            ) : (
-                              'Pay with Credit Card'
-                            )}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
+                    <button
+                      onClick={handlePaymentSubmit}
+                      disabled={isProcessing}
+                      className="mt-4 w-full bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors disabled:bg-gray-400"
+                    >
+                      {isProcessing ? "Processing..." : "Pay Now"}
+                    </button>
                   )}
-                  {activeTab === "paypal" && (
-                    <div className="text-center p-6 border rounded-md">
-                      <p className="mb-4">
-                        You'll be redirected to PayPal to complete your purchase
-                        securely.
-                      </p>
-                      <button
-                        type="button"
-                        className="bg-[#0070ba] hover:bg-[#005ea6] text-white px-4 py-2 rounded-md transition-colors"
-                      >
-                        Continue with PayPal 
-                      </button>
-                    </div>
-                  )}
-                  {activeTab === "apple" && (
-                    <div className="text-center p-6 border rounded-md">
-                      <p className="mb-4">
-                        Complete your purchase with Apple Pay.
-                      </p>
-                      <button
-                        type="button"
-                        className="bg-black hover:bg-gray-800 text-white px-4 py-2 rounded-md transition-colors flex items-center justify-center mx-auto"
-                      >
-                        <svg
-                          className="h-5 w-5 mr-2"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <path
-                            d="M17.0001 7.5C17.6667 6.83333 18 6 18 5C18 4 17.6667 3.16667 17.0001 2.5C16.3334 3.16667 16.0001 4 16.0001 5C16.0001 6 16.3334 6.83333 17.0001 7.5Z"
-                            fill="currentColor"
-                          />
-                          <path
-                            d="M12.0001 21.5C11.0001 21.5 10.0001 21 9.00008 20C8.00008 19 7.33341 18.3333 7.00008 18C5.66674 16.6667 4.66674 15 4.00008 13C3.33341 11 3.33341 9.16667 4.00008 7.5C4.66674 5.83333 5.83341 5 7.50008 5C8.50008 5 9.33341 5.33333 10.0001 6C10.6667 6.66667 11.1667 7 11.5001 7C11.8334 7 12.3334 6.66667 13.0001 6C13.6667 5.33333 14.5001 5 15.5001 5C16.5001 5 17.3334 5.33333 18.0001 6C18.6667 6.66667 19.0001 7.5 19.0001 8.5C19.0001 9.5 18.6667 10.5 18.0001 11.5C17.3334 12.5 16.5001 13.3333 15.5001 14C14.5001 14.6667 13.6667 15 13.0001 15C12.3334 15 11.8334 14.6667 11.5001 14C11.1667 13.3333 10.6667 13 10.0001 13C9.33341 13 8.83341 13.3333 8.50008 14C8.16674 14.6667 8.00008 15.3333 8.00008 16C8.00008 16.6667 8.33341 17.5 9.00008 18.5C9.66674 19.5 10.5001 20 11.5001 20C12.5001 20 13.3334 19.6667 14.0001 19C14.6667 18.3333 15.1667 18 15.5001 18C15.8334 18 16.3334 18.3333 17.0001 19C17.6667 19.6667 18.5001 20 19.5001 20C20.5001 20 21.3334 19.6667 22.0001 19C22.6667 18.3333 23.0001 17.5 23.0001 16.5C23.0001 15.5 22.6667 14.5 22.0001 13.5C21.3334 12.5 20.5001 11.6667 19.5001 11C18.5001 10.3333 17.6667 10 17.0001 10C16.3334 10 15.8334 10.3333 15.5001 11C15.1667 11.6667 14.6667 12 14.0001 12C13.3334 12 12.8334 11.6667 12.5001 11C12.1667 10.3333 11.6667 10 11.0001 10C10.3334 10 9.83341 10.3333 9.50008 11C9.16674 11.6667 9.00008 12.3333 9.00008 13C9.00008 13.6667 9.33341 14.5 10.0001 15.5C10.6667 16.5 11.5001 17 12.5001 17C13.5001 17 14.3334 16.6667 15.0001 16C15.6667 15.3333 16.1667 15 16.5001 15C16.8334 15 17.3334 15.3333 18.0001 16C18.6667 16.6667 19.5001 17 20.5001 17C21.5001 17 22.3334 16.6667 23.0001 16"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        </svg>
-                        Pay
-                      </button>
-                    </div>
-                  )}
+                </div>
+
+                {/* COD Option */}
+                <div className={`p-4 border rounded-lg ${activeTab === "cod" ? "border-blue-500" : "border-gray-200"}`}>
+                  <label className="flex items-center space-x-3 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value="cod"
+                      checked={activeTab === "cod"}
+                      onChange={(e) => {
+                        setActiveTab(e.target.value)
+                        setPaymentMethod(e.target.value)
+                      }}
+                      className="form-radio text-blue-500"
+                    />
+                    <span className="flex items-center space-x-2">
+                      <Package className="h-5 w-5 text-gray-400" />
+                      <span className="font-medium">Cash on Delivery (COD)</span>
+                    </span>
+                  </label>
                   {activeTab === "cod" && (
-                    <div className="border border-yellow-400 bg-yellow-50 p-4 rounded-md text-yellow-900 mt-2">
-                      <h4 className="font-bold text-lg mb-2">
-                        Cash on Delivery (COD)
-                      </h4>
-                      <ul className="list-disc ml-6 mb-2">
-                        <li>
-                          You must pay <b>in cash</b> or <b>e-transfer</b> to
-                          the delivery person.
-                        </li>
-                        <li>
-                          Please have the <b>exact amount</b> ready.
-                        </li>
-                        <li>
-                          A COD handling fee of <b>${COD_FEE}</b> will be added
-                          to your order.
-                        </li>
-                        <li>
-                          Optionally, our courier may have a POS machine for
-                          card payments.
-                        </li>
-                      </ul>
-                      <div className="font-semibold">
-                        Your order will be marked as{" "}
-                        <span className="text-orange-600">
-                          Pending Order in Process
-                        </span>{" "}
-                        until payment is confirmed by our staff or the delivery
-                        person.
-                      </div>
+                    <div className="mt-4 space-y-4">
+                      <p className="text-sm text-gray-600">
+                        Pay in cash when your order is delivered. A fee of ${COD_FEE.toFixed(2)} will be added to your order.
+                      </p>
+                      <button
+                        onClick={handlePaymentSubmit}
+                        disabled={isProcessing}
+                        className="w-full bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition-colors disabled:bg-gray-400"
+                      >
+                        {isProcessing ? "Processing..." : "Place Order (Pay Later)"}
+                      </button>
                     </div>
                   )}
                 </div>
               </div>
             </div>
-
-            <CartDisplay 
-              cart={cart}
-              updateQuantity={updateQuantity}
-              setQuantity={setQuantity}
-              removeItem={removeItem}
-            />
-          </form>
+          </div>
         );
 
       default:
@@ -1576,8 +1415,8 @@ export default function CheckoutPage() {
               >
                 <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M12 8V16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M8 12H16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M12 16V12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M12 8H12.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
                 Continue as Guest
               </button>
