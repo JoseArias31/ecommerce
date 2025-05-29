@@ -3,6 +3,7 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useTranslation } from './TranslationContext';
 import { supabase } from '@/lib/supabaseClient';
+import { toast } from 'react-hot-toast';
 
 // Country data with name, code, currency, flag, and language
 const countryDefaults = {
@@ -29,6 +30,7 @@ const CountryContext = createContext();
 export function CountryProvider({ children }) {
   // Initialize country from localStorage or default to Canada
   const [country, setCountry] = useState('CA');
+  const [previousCountry, setPreviousCountry] = useState('CA');
   const [countries, setCountries] = useState(countryDefaults);
   const [loading, setLoading] = useState(true);
   const { toggleLanguage, language } = useTranslation();
@@ -38,6 +40,7 @@ export function CountryProvider({ children }) {
     const savedCountry = localStorage.getItem('country');
     if (savedCountry && countries[savedCountry]) {
       setCountry(savedCountry);
+      setPreviousCountry(savedCountry);
     }
     
     // Fetch countries from Supabase
@@ -84,9 +87,69 @@ export function CountryProvider({ children }) {
     localStorage.setItem('country', country);
   }, [country]);
   
+  // Check if products in cart are available in the new country
+  const checkCartAvailability = async (newCountryCode) => {
+    try {
+      // Get cart from localStorage
+      const cart = JSON.parse(localStorage.getItem('cart')) || [];
+      if (cart.length === 0) return true;
+
+      // Get all product IDs from cart
+      const productIds = cart.map(item => item.id);
+      
+      // Check availability in new country
+      const { data, error } = await supabase
+        .from('products')
+        .select('id, name, country_availability')
+        .in('id', productIds);
+
+      if (error) throw error;
+
+      // Check if all products are available in new country
+      const unavailableProducts = data.filter(product => 
+        !product.country_availability.includes(newCountryCode)
+      );
+
+      if (unavailableProducts.length > 0) {
+        // Get the names of unavailable products
+        const productNames = unavailableProducts.map(p => p.name).join(', ');
+        
+        // Show toast with unavailable products
+        toast.error(
+          language === 'en' 
+            ? `The following items in your cart are not available in ${countries[newCountryCode].name}: ${productNames}`
+            : `Los siguientes productos en tu carrito no están disponibles en ${countries[newCountryCode].name}: ${productNames}`
+        );
+        
+        return false;
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error checking cart availability:', error);
+      return false;
+    }
+  };
+
   // Change country and update language if needed
-  const changeCountry = (countryCode) => {
+  const changeCountry = async (countryCode) => {
     if (countries[countryCode]) {
+      // Store the current country as previous before changing
+      setPreviousCountry(country);
+      
+      // Check if products in cart are available in new country
+      const areProductsAvailable = await checkCartAvailability(countryCode);
+      
+      if (!areProductsAvailable) {
+        toast(
+          language === 'en'
+            ? 'Please remove unavailable items from your cart before changing country'
+            : 'Por favor elimina los productos no disponibles de tu carrito antes de cambiar el país'
+        );
+        return;
+      }
+
+      // Proceed with country change
       setCountry(countryCode);
       
       // Change language based on country if it's different
@@ -105,6 +168,7 @@ export function CountryProvider({ children }) {
   return (
     <CountryContext.Provider value={{ 
       country, 
+      previousCountry,
       changeCountry, 
       getCountryData,
       countries,

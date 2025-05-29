@@ -1357,7 +1357,7 @@ export default function CheckoutPage() {
                   >
                     Credit Card
                   </button>
-                  <button
+                  {/* <button
                     type="button"
                     onClick={() => {
                       setActiveTab("paypal");
@@ -1384,7 +1384,7 @@ export default function CheckoutPage() {
                     }`}
                   >
                     Apple Pay
-                  </button>
+                  </button> */}
                   <button
                     type="button"
                     onClick={() => {
@@ -1440,7 +1440,7 @@ export default function CheckoutPage() {
                                 Processing...
                               </span>
                             ) : (
-                              'Checkout with Stripe'
+                              'Pay with Credit Card'
                             )}
                           </button>
                         </div>
