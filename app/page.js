@@ -461,7 +461,6 @@ export default function Home() {
                         {productRatings[product.id]?.count || 0}
                       </span>
                     </div>
-                    <span className="font-bold text-gray-900">{formatPriceForCountry(product.price, getCountryData())}</span>
                   </div>
                   <p className="text-[10px] sm:text-xs md:text-sm text-gray-500 mb-1 sm:mb-2 line-clamp-2">
                     {product.description}
