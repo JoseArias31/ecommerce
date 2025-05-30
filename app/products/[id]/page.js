@@ -506,7 +506,7 @@ export default function ProductPage({ params }) {
           </div>
 
           {/* Price */}
-          <p className="text-2xl mt-2">${product.price.toFixed(2)}</p>
+          <p className="text-2xl mt-2">${product.price}</p>
 
           {/* Availability */}
           <div className="mt-4">
@@ -773,7 +773,7 @@ export default function ProductPage({ params }) {
                   />
                 </div>
                 <h3 className="font-medium group-hover:underline">{viewedProduct.name}</h3>
-                <p className="text-gray-700">${viewedProduct.price.toFixed(2)}</p>
+                <p className="text-gray-700">${viewedProduct.price}</p>
               </Link>
             ))}
           </div>

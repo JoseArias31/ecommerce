@@ -314,7 +314,12 @@ export default function UserDashboard() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-pulse text-xl font-medium">Loading...</div>
+        <div className="flex flex-col items-center space-y-4">
+          <div className="bg-white p-8 rounded-xl border border-gray-100 shadow-sm flex items-center justify-center">
+            <div className="w-12 h-12 border-t-2 border-black rounded-full animate-spin"></div>
+          </div>
+          <p className="text-gray-600 font-medium">Loading your account...</p>
+        </div>
       </div>
     );
   }
@@ -322,14 +327,17 @@ export default function UserDashboard() {
   if (!user) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Please sign in</h1>
-          <p className="mb-6">
-            You need to be signed in to view your dashboard
+        <div className="text-center bg-white p-10 rounded-xl border border-gray-100 shadow-sm max-w-md w-full">
+          <div className="inline-flex bg-black bg-opacity-5 p-3 rounded-full mb-6">
+            <User className="h-6 w-6 text-black" />
+          </div>
+          <h1 className="text-2xl font-bold mb-4 text-gray-800">Please sign in</h1>
+          <p className="mb-8 text-gray-500">
+            You need to be signed in to view your account dashboard
           </p>
           <a
             href="/login"
-            className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-black hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black"
+            className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-black hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black transition-all duration-200 w-full"
           >
             Sign In
           </a>
@@ -344,18 +352,18 @@ export default function UserDashboard() {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8 max-w-6xl">
-        <div className="bg-white rounded-lg shadow-sm overflow-hidden mb-8">
-          <div className="p-6 border-b border-gray-100">
-            <h1 className="text-2xl font-bold">My Account</h1>
+        <div className="bg-white rounded-xl shadow-md overflow-hidden mb-8 border border-gray-100">
+          <div className="p-8 border-b border-gray-100">
+            <h1 className="text-2xl font-bold text-gray-800">My Account</h1>
           </div>
 
           {/* Tabs */}
           <div className="border-b border-gray-100">
             {/* Desktop Tabs */}
-            <nav className="hidden sm:flex -mb-px">
+            <nav className="hidden sm:flex -mb-px px-8">
               <button
                 onClick={() => setActiveTab("overview")}
-                className={`py-4 px-6 text-sm font-medium ${
+                className={`py-4 px-6 text-sm font-medium transition-colors duration-200 ${
                   activeTab === "overview"
                     ? "border-b-2 border-black text-black"
                     : "text-gray-500 hover:text-gray-700"
@@ -365,7 +373,7 @@ export default function UserDashboard() {
               </button>
               <button
                 onClick={() => setActiveTab("orders")}
-                className={`py-4 px-6 text-sm font-medium ${
+                className={`py-4 px-6 text-sm font-medium transition-colors duration-200 ${
                   activeTab === "orders"
                     ? "border-b-2 border-black text-black"
                     : "text-gray-500 hover:text-gray-700"
@@ -375,7 +383,7 @@ export default function UserDashboard() {
               </button>
               <button
                 onClick={() => setActiveTab("payments")}
-                className={`py-4 px-6 text-sm font-medium ${
+                className={`py-4 px-6 text-sm font-medium transition-colors duration-200 ${
                   activeTab === "payments"
                     ? "border-b-2 border-black text-black"
                     : "text-gray-500 hover:text-gray-700"
@@ -385,7 +393,7 @@ export default function UserDashboard() {
               </button>
               <button
                 onClick={() => setActiveTab("addresses")}
-                className={`py-4 px-6 text-sm font-medium ${
+                className={`py-4 px-6 text-sm font-medium transition-colors duration-200 ${
                   activeTab === "addresses"
                     ? "border-b-2 border-black text-black"
                     : "text-gray-500 hover:text-gray-700"
@@ -474,20 +482,22 @@ export default function UserDashboard() {
           </div>
 
           {/* Tab Content */}
-          <div className="p-6">
+          <div className="p-8">
             {/* Overview Tab */}
             {activeTab === "overview" && (
-              <div className="space-y-8">
+              <div className="space-y-10">
                 {/* User Info */}
-                <div className="bg-gray-50 p-6 rounded-lg">
-                  <div className="flex items-center mb-4">
-                    <User className="h-5 w-5 mr-2 text-gray-500" />
-                    <h2 className="text-lg font-medium">Account Information</h2>
+                <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm transition-all duration-200 hover:shadow-md">
+                  <div className="flex items-center mb-6">
+                    <div className="bg-black bg-opacity-5 p-2 rounded-full mr-3">
+                      <User className="h-5 w-5 text-black" />
+                    </div>
+                    <h2 className="text-lg font-medium text-gray-800">Account Information</h2>
                   </div>
                   <div className="grid md:grid-cols-2 gap-4">
                     <div>
-                      <p className="text-sm text-gray-500">Name</p>
-                      <div className="flex flex-row gap-2">
+                      <p className="text-sm font-medium text-gray-400">Name</p>
+                      <div className="flex flex-row gap-2 mt-1">
                         <input
                           type="text"
                           value={newName || user?.name || ""}
@@ -497,7 +507,7 @@ export default function UserDashboard() {
                               ? user.name
                               : user?.email?.split("@")[0] || ""
                           }
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-black focus:border-black"
+                          className="w-full px-4 py-2.5 border border-gray-200 rounded-lg shadow-sm focus:ring-1 focus:ring-black focus:border-black transition-all duration-200"
                         />
                         <button
                           onClick={async () => {
@@ -517,23 +527,23 @@ export default function UserDashboard() {
                             }
                           }}
                           disabled={isUpdatingName || newName === user.name}
-                          className=" px-3 py-1.5 bg-black text-white rounded-md hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="px-4 py-2.5 bg-black text-white rounded-lg hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black"
                         >
                           {isUpdatingName ? "Updating..." : "Save"}
                         </button>
                       </div>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500">Email</p>
-                      <p className="font-medium">{user.email}</p>
+                      <p className="text-sm font-medium text-gray-400">Email</p>
+                      <p className="font-medium mt-1 text-gray-800">{user.email}</p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500">Account Status</p>
-                      <p className="font-medium capitalize">{user.status}</p>
+                      <p className="text-sm font-medium text-gray-400">Account Status</p>
+                      <p className="font-medium mt-1 capitalize text-gray-800">{user.status}</p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500">Member Since</p>
-                      <p className="font-medium">
+                      <p className="text-sm font-medium text-gray-400">Member Since</p>
+                      <p className="font-medium mt-1 text-gray-800">
                         {formatDate(user.created_at)}
                       </p>
                     </div>
@@ -542,12 +552,17 @@ export default function UserDashboard() {
 
                 {/* Recent Orders */}
                 <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-lg font-medium">Recent Orders</h2>
+                  <div className="flex items-center justify-between mb-5">
+                    <div className="flex items-center">
+                      <div className="bg-black bg-opacity-5 p-2 rounded-full mr-3">
+                        <ShoppingBag className="h-5 w-5 text-black" />
+                      </div>
+                      <h2 className="text-lg font-medium text-gray-800">Recent Orders</h2>
+                    </div>
                     {orders.length > 0 && (
                       <button
                         onClick={() => setActiveTab("orders")}
-                        className="text-sm text-black hover:underline"
+                        className="text-sm text-black hover:text-gray-600 transition-colors duration-200 font-medium"
                       >
                         View All
                       </button>
@@ -555,23 +570,23 @@ export default function UserDashboard() {
                   </div>
 
                   {orders.length === 0 ? (
-                    <div className="bg-gray-50 p-6 rounded-lg text-center">
+                    <div className="bg-white p-8 rounded-xl border border-gray-100 shadow-sm text-center">
                       <p className="text-gray-500">
                         You haven't placed any orders yet.
                       </p>
                       <a
                         href="/shop"
-                        className="mt-2 inline-block text-sm text-black hover:underline"
+                        className="mt-3 inline-block text-sm font-medium text-black hover:text-gray-600 transition-colors duration-200"
                       >
                         Start shopping
                       </a>
                     </div>
                   ) : (
-                    <div className="space-y-4">
+                    <div className="space-y-4 overflow-hidden">
                       {orders.slice(0, 3).map((order) => (
                         <div
                           key={order.id}
-                          className="bg-gray-50 p-4 rounded-lg"
+                          className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm transition-all duration-200 hover:shadow-md"
                         >
                           <div className="flex justify-between items-center">
                             <div>
@@ -589,11 +604,11 @@ export default function UserDashboard() {
                               </p>
                             </div>
                             <div className="text-right">
-                              <p className="font-medium">
+                              <p className="font-semibold text-gray-800">
                                 {formatCurrency(order.amount)}
                               </p>
                               <p
-                                className={`text-sm capitalize px-2 py-1 rounded-md inline-block
+                                className={`text-xs font-medium capitalize px-3 py-1 rounded-full inline-block
                                 ${
                                   order.status === "completed"
                                     ? "bg-green-100 text-green-800"
@@ -616,12 +631,19 @@ export default function UserDashboard() {
 
                 {/* Recent Payments */}
                 <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-lg font-medium">Recent Payments</h2>
+                  <div className="flex items-center justify-between mb-5">
+                    <div className="flex items-center">
+                      <div className="bg-black bg-opacity-5 p-2 rounded-full mr-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                        </svg>
+                      </div>
+                      <h2 className="text-lg font-medium text-gray-800">Recent Payments</h2>
+                    </div>
                     {payments.length > 0 && (
                       <button
                         onClick={() => setActiveTab("payments")}
-                        className="text-sm text-black hover:underline"
+                        className="text-sm text-black hover:text-gray-600 transition-colors duration-200 font-medium"
                       >
                         View All
                       </button>
@@ -629,21 +651,21 @@ export default function UserDashboard() {
                   </div>
 
                   {payments.length === 0 ? (
-                    <div className="bg-gray-50 p-6 rounded-lg text-center">
+                    <div className="bg-white p-8 rounded-xl border border-gray-100 shadow-sm text-center">
                       <p className="text-gray-500">
                         No payment history available.
                       </p>
                     </div>
                   ) : (
-                    <div className="space-y-4">
+                    <div className="space-y-4 overflow-hidden">
                       {payments.slice(0, 3).map((payment) => (
                         <div
                           key={payment.id}
-                          className="bg-gray-50 p-4 rounded-lg"
+                          className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm transition-all duration-200 hover:shadow-md"
                         >
                           <div className="flex justify-between items-center">
                             <div className="text-left">
-                              <p className="font-medium capitalize">
+                              <p className="font-semibold text-gray-800 capitalize">
                                 {payment.method}
                               </p>
                               <p className="text-sm text-gray-500">
@@ -659,11 +681,11 @@ export default function UserDashboard() {
                               </p>
                             </div>
                             <div className="text-right">
-                              <p className="font-medium">
+                              <p className="font-semibold text-gray-800">
                                 {formatCurrency(payment.amount)}
                               </p>
                               <p
-                                className={`text-sm capitalize px-2 py-1 rounded-md inline-block
+                                className={`text-xs font-medium capitalize px-3 py-1 rounded-full inline-block
                                 ${
                                   payment.status === "completed"
                                     ? "bg-green-100 text-green-800"
@@ -689,16 +711,16 @@ export default function UserDashboard() {
             {/* Orders Tab */}
             {activeTab === "orders" && (
               <div>
-                <h2 className="text-xl font-medium mb-6">My Orders</h2>
+                <h2 className="text-xl font-medium mb-6 text-gray-800">My Orders</h2>
 
                 {orders.length === 0 ? (
-                  <div className="bg-gray-50 p-6 rounded-lg text-center">
+                  <div className="bg-white p-8 rounded-xl border border-gray-100 shadow-sm text-center">
                     <p className="text-gray-500">
                       You haven't placed any orders yet.
                     </p>
                     <a
                       href="/shop"
-                      className="mt-2 inline-block text-sm text-black hover:underline"
+                      className="mt-3 inline-block text-sm font-medium text-black hover:text-gray-600 transition-colors duration-200"
                     >
                       Start shopping
                     </a>
@@ -714,10 +736,10 @@ export default function UserDashboard() {
                       return (
                         <div
                           key={order.id}
-                          className="border border-gray-200 rounded-lg overflow-hidden"
+                          className="border border-gray-100 rounded-xl shadow-sm overflow-hidden transition-all duration-200 hover:shadow-md"
                         >
                           <div
-                            className="bg-gray-50 p-4 flex justify-between items-center cursor-pointer"
+                            className="bg-white p-5 flex justify-between items-center cursor-pointer transition-colors duration-200 hover:bg-gray-50"
                             onClick={() => toggleOrderExpand(order.id)}
                           >
                             <div>
@@ -736,11 +758,11 @@ export default function UserDashboard() {
                             </div>
                             <div className="flex items-center">
                               <div className="text-right mr-4">
-                                <p className="font-medium">
+                                <p className="font-semibold text-gray-800">
                                   {formatCurrency(order.amount)}
                                 </p>
                                 <p
-                                  className={`text-sm capitalize px-2 py-1 rounded-md inline-block
+                                  className={`text-xs font-medium capitalize px-3 py-1 rounded-full inline-block
                                   ${
                                     order.status === "completed"
                                       ? "bg-green-100 text-green-800"
@@ -755,23 +777,26 @@ export default function UserDashboard() {
                                 </p>
                               </div>
                               {isExpanded ? (
-                                <ChevronUp className="h-5 w-5 text-gray-500" />
+                                <ChevronUp className="h-5 w-5 text-black" />
                               ) : (
-                                <ChevronDown className="h-5 w-5 text-gray-500" />
+                                <ChevronDown className="h-5 w-5 text-black" />
                               )}
                             </div>
                           </div>
 
                           {isExpanded && (
-                            <div className="p-4 border-t border-gray-200">
+                            <div className="p-6 border-t border-gray-100">
                               {/* Order Items */}
-                              <div className="mb-6">
-                                <h3 className="font-medium mb-3">
+                              <div className="mb-8">
+                                <h3 className="font-medium mb-4 text-gray-800 flex items-center">
+                                  <div className="bg-black bg-opacity-5 p-1.5 rounded-full mr-2">
+                                    <ShoppingBag className="h-4 w-4 text-black" />
+                                  </div>
                                   Order Items
                                 </h3>
-                                <div className="bg-gray-50 rounded-lg overflow-hidden">
+                                <div className="bg-white rounded-xl overflow-hidden border border-gray-100 shadow-sm">
                                   <table className="min-w-full divide-y divide-gray-200">
-                                    <thead className="bg-gray-100">
+                                    <thead className="bg-gray-50">
                                       <tr>
                                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                           Product
@@ -835,44 +860,40 @@ export default function UserDashboard() {
 
                               {/* Payment Info */}
                               {payment && (
-                                <div className="mb-6">
-                                  <h3 className="font-medium mb-3">
+                                <div className="mb-8">
+                                  <h3 className="font-medium mb-4 text-gray-800 flex items-center">
+                                    <div className="bg-black bg-opacity-5 p-1.5 rounded-full mr-2">
+                                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                                      </svg>
+                                    </div>
                                     Payment Information
                                   </h3>
-                                  <div className="bg-gray-50 p-4 rounded-lg">
+                                  <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm">
                                     <div className="grid md:grid-cols-3 gap-4">
                                       <div>
-                                        <p className="text-sm text-gray-500">
+                                        <p className="text-sm font-medium text-gray-400">
                                           Method
                                         </p>
-                                        <p
-                                          className={`font-medium capitalize ${
-                                            payment.status === "completed"
-                                              ? "bg-green-100 text-green-800"
-                                              : payment.status === "pending"
-                                              ? "bg-yellow-100 text-yellow-800"
-                                              : payment.status === "cancelled"
-                                              ? "bg-red-100 text-red-800"
-                                              : "bg-gray-100 text-gray-800"
-                                          } px-2 py-1 rounded-md`}
-                                        >
+                                        <p className="font-medium capitalize text-gray-800 mt-1">
                                           {payment.method}
                                         </p>
                                       </div>
                                       <div>
-                                        <p className="text-sm text-gray-500">
+                                        <p className="text-sm font-medium text-gray-400">
                                           Amount
                                         </p>
-                                        <p className="font-medium">
+                                        <p className="font-medium text-gray-800 mt-1">
                                           {formatCurrency(payment.amount)}
                                         </p>
                                       </div>
                                       <div>
-                                        <p className="text-sm text-gray-500">
+                                        <p className="text-sm font-medium text-gray-400">
                                           Status
                                         </p>
                                         <p
-                                          className={`font-medium capitalize ${
+                                          className={`text-xs font-medium capitalize mt-1 px-3 py-1 rounded-full inline-block
+                                          ${
                                             payment.status === "completed"
                                               ? "bg-green-100 text-green-800"
                                               : payment.status === "pending"
@@ -880,7 +901,7 @@ export default function UserDashboard() {
                                               : payment.status === "cancelled"
                                               ? "bg-red-100 text-red-800"
                                               : "bg-gray-100 text-gray-800"
-                                          } px-2 py-1 rounded-md`}
+                                          }`}
                                         >
                                           {payment.status}
                                         </p>
@@ -893,53 +914,59 @@ export default function UserDashboard() {
                               {/* Shipping Address */}
                               {address && (
                                 <div>
-                                  <h3 className="font-medium mb-3">
+                                  <h3 className="font-medium mb-4 text-gray-800 flex items-center">
+                                    <div className="bg-black bg-opacity-5 p-1.5 rounded-full mr-2">
+                                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                      </svg>
+                                    </div>
                                     Shipping Address
                                   </h3>
-                                  <div className="bg-gray-50 p-4 rounded-lg">
-                                    <div className="grid md:grid-cols-2 gap-4">
+                                  <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm">
+                                    <div className="grid md:grid-cols-2 gap-6">
                                       <div>
-                                        <p className="text-sm text-gray-500">
+                                        <p className="text-sm font-medium text-gray-400">
                                           Name
                                         </p>
-                                        <p className="font-medium">
+                                        <p className="font-medium text-gray-800 mt-1">
                                           {address.first_name}{" "}
                                           {address.last_name}
                                         </p>
                                       </div>
                                       <div>
-                                        <p className="text-sm text-gray-500">
+                                        <p className="text-sm font-medium text-gray-400">
                                           Contact
                                         </p>
-                                        <p className="font-medium">
+                                        <p className="font-medium text-gray-800 mt-1">
                                           {address.email}
                                         </p>
-                                        <p className="font-medium">
+                                        <p className="font-medium text-gray-800">
                                           {address.phone}
                                         </p>
                                       </div>
                                       <div className="md:col-span-2">
-                                        <p className="text-sm text-gray-500">
+                                        <p className="text-sm font-medium text-gray-400">
                                           Address
                                         </p>
-                                        <p className="font-medium">
+                                        <p className="font-medium text-gray-800 mt-1">
                                           {address.address}
                                           {address.apartment &&
                                             `, ${address.apartment}`}
                                         </p>
-                                        <p className="font-medium">
+                                        <p className="font-medium text-gray-800">
                                           {address.city}, {address.state}{" "}
                                           {address.zip_code}
                                         </p>
-                                        <p className="font-medium">
+                                        <p className="font-medium text-gray-800">
                                           {address.country}
                                         </p>
                                       </div>
                                       <div>
-                                        <p className="text-sm text-gray-500">
+                                        <p className="text-sm font-medium text-gray-400">
                                           Shipping Method
                                         </p>
-                                        <p className="font-medium capitalize">
+                                        <p className="font-medium text-gray-800 mt-1 capitalize">
                                           {order.shipping_method}
                                         </p>
                                       </div>
@@ -960,18 +987,25 @@ export default function UserDashboard() {
             {/* Payments Tab */}
             {activeTab === "payments" && (
               <div>
-                <h2 className="text-xl font-medium mb-6">Payment History</h2>
+                <h2 className="text-xl font-medium mb-6 text-gray-800 flex items-center">
+                  <div className="bg-black bg-opacity-5 p-2 rounded-full mr-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                    </svg>
+                  </div>
+                  Payment History
+                </h2>
 
                 {payments.length === 0 ? (
-                  <div className="bg-gray-50 p-6 rounded-lg text-center">
+                  <div className="bg-white p-8 rounded-xl border border-gray-100 shadow-sm text-center">
                     <p className="text-gray-500">
                       No payment history available.
                     </p>
                   </div>
                 ) : (
-                  <div className="bg-gray-50 rounded-lg overflow-hidden">
+                  <div className="bg-white rounded-xl overflow-hidden border border-gray-100 shadow-sm">
                     <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-100">
+                      <thead className="bg-gray-50">
                         <tr>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Date
@@ -991,7 +1025,7 @@ export default function UserDashboard() {
                         {payments.map((payment) => (
                           <tr key={payment.id}>
                             <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="text-sm text-gray-900">
+                              <div className="text-sm font-medium text-gray-800">
                                 {formatDate(payment.created_at)}
                               </div>
                               <p className="text-xs text-gray-500">
@@ -1004,25 +1038,27 @@ export default function UserDashboard() {
                               </p>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="text-sm font-medium text-gray-900 capitalize">
+                              <div className="text-sm font-medium text-gray-800 capitalize">
                                 {payment.method}
                               </div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <span
-                                className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                className={`px-3 py-1 inline-flex text-xs leading-5 font-medium rounded-full 
                                 ${
                                   payment.status === "completed"
                                     ? "bg-green-100 text-green-800"
                                     : payment.status === "pending"
                                     ? "bg-yellow-100 text-yellow-800"
+                                    : payment.status === "cancelled"
+                                    ? "bg-red-100 text-red-800"
                                     : "bg-gray-100 text-gray-800"
                                 }`}
                               >
                                 {payment.status}
                               </span>
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium text-gray-800">
                               {formatCurrency(payment.amount)}
                             </td>
                           </tr>
@@ -1037,11 +1073,19 @@ export default function UserDashboard() {
             {/* Addresses Tab */}
             {activeTab === "addresses" && (
               <div>
-                <h2 className="text-xl font-medium mb-6">Shipping Addresses</h2>
+                <h2 className="text-xl font-medium mb-6 text-gray-800 flex items-center">
+                  <div className="bg-black bg-opacity-5 p-2 rounded-full mr-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                  </div>
+                  Shipping Addresses
+                </h2>
 
                 {isLoading ? (
-                  <div className="flex justify-center">
-                    <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                  <div className="flex justify-center p-8">
+                    <div className="w-10 h-10 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
                   </div>
                 ) : (
                   <div className="grid gap-3">
@@ -1061,12 +1105,12 @@ export default function UserDashboard() {
                       .map((address) => (
                       <div 
                         key={address.id} 
-                        className="border rounded-lg p-3 transition-all hover:shadow-sm border-gray-200"
+                        className="border rounded-xl p-4 transition-all hover:shadow-md border-gray-100 shadow-sm bg-white"
                       >
                         <div className="flex justify-between items-start">
                           <div className="flex-1">
                             <div className="flex items-center">
-                              <p className="font-medium text-sm">
+                              <p className="font-medium text-sm text-gray-800">
                                 {address.first_name} {address.last_name}
                               </p>
                               {address.country === 'CA' && (
@@ -1085,7 +1129,7 @@ export default function UserDashboard() {
                                 </span>
                               )}
                               {defaultAddressId === address.id && (
-                                <span className="ml-2 bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full">
+                                <span className="ml-2 bg-black bg-opacity-10 text-black text-xs px-3 py-0.5 rounded-full font-medium">
                                   Default
                                 </span>
                               )}
@@ -1106,14 +1150,14 @@ export default function UserDashboard() {
                             {defaultAddressId !== address.id && (
                               <button 
                                 onClick={() => handleSetDefaultAddress(address.id)}
-                                className="text-xs text-blue-600 hover:text-blue-800"
+                                className="text-xs font-medium text-black hover:text-gray-600 transition-colors duration-200"
                               >
                                 Set Default
                               </button>
                             )}
                             <button 
                               onClick={() => handleDeleteAddress(address.id)}
-                              className="text-xs text-red-600 hover:text-red-800"
+                              className="text-xs font-medium text-red-600 hover:text-red-800 transition-colors duration-200"
                             >
                               Delete
                             </button>
@@ -1124,7 +1168,7 @@ export default function UserDashboard() {
                     
                     <button
                       onClick={() => setShowAddressForm(true)}
-                      className="w-full border-2 border-dashed border-gray-300 rounded-lg p-4 text-gray-600 hover:border-gray-400 hover:text-gray-800 transition-colors"
+                      className="w-full border-2 border-dashed border-gray-200 rounded-xl p-5 text-gray-600 hover:border-gray-400 hover:text-gray-800 transition-all duration-200 hover:shadow-sm bg-white"
                     >
                       + Add New Address
                     </button>
@@ -1139,8 +1183,8 @@ export default function UserDashboard() {
       {/* Address Form Modal */}
       {showAddressForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
-            <h3 className="text-xl font-semibold mb-4">Add New Address</h3>
+          <div className="bg-white rounded-xl p-8 max-w-md w-full shadow-lg border border-gray-100">
+            <h3 className="text-xl font-semibold mb-6 text-gray-800">Add New Address</h3>
             <form onSubmit={handleAddAddress} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -1290,13 +1334,13 @@ export default function UserDashboard() {
                 <button
                   type="button"
                   onClick={() => setShowAddressForm(false)}
-                  className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                  className="px-4 py-2.5 text-gray-500 hover:text-gray-700 font-medium transition-colors duration-200"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-black text-white rounded-md hover:bg-gray-800"
+                  className="px-4 py-2.5 bg-black text-white rounded-lg hover:bg-gray-800 transition-all duration-200 font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black"
                 >
                   Save Address
                 </button>

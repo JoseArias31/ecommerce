@@ -116,7 +116,7 @@ export const EmailTemplate: React.FC<Readonly<EmailTemplateProps>> = ({
           color: "#111827",
           margin: "0"
         }}>
-          ${orderDetails.amount.toFixed(2)}
+          ${orderDetails.amount}
         </p>
       </div>
     </div>
@@ -221,7 +221,7 @@ export const EmailTemplate: React.FC<Readonly<EmailTemplateProps>> = ({
           fontWeight: 500,
           color: "#111827"
         }}>
-          ${item.price.toFixed(2)}
+          ${item.price}
         </p>
         <p style={{
           margin: "0",
@@ -229,7 +229,7 @@ export const EmailTemplate: React.FC<Readonly<EmailTemplateProps>> = ({
           color: "#6b7280",
           fontWeight: 500
         }}>
-          ${(item.price * item.quantity).toFixed(2)}
+          ${(item.price * item.quantity)}
         </p>
       </div>
     </div>

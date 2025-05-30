@@ -443,7 +443,7 @@ export default function AdminPage() {
                     value={Number.isNaN(currentProduct.price) ? "" : currentProduct.price}
                     onChange={handleChange}
                     className="w-full p-2 border rounded-md text-sm"
-                    step="0.01"
+                    
                     min="0"
                     required
                   />
@@ -622,7 +622,7 @@ export default function AdminPage() {
                       </div>
                     </td>
                     <td className="px-2 sm:px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">${product.price.toFixed(2)}</div>
+                      <div className="text-sm text-gray-900">${product.price}</div>
                     </td>
                     <td className="px-2 sm:px-6 py-4 whitespace-nowrap">
                       {product.stock > 15 ? (

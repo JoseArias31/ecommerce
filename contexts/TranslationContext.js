@@ -15,7 +15,7 @@ const translations = {
     hey: "Hey!",
     
     // Common actions
-    addToCart: "Add to Cart",
+    addToCart: "Add",
     checkout: "Checkout",
     buy: "Buy Now",
     
@@ -64,7 +64,7 @@ const translations = {
     hey: "¡Hola!",
     
     // Common actions
-    addToCart: "Añadir al Carrito",
+    addToCart: "Añadir",
     checkout: "Finalizar Compra",
     buy: "Comprar Ahora",
     
