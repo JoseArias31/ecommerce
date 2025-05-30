@@ -4,6 +4,7 @@ import { stripe } from '../../../lib/stripe'
 import { supabase } from '../../../lib/supabaseClient'
 import { Resend } from 'resend'
 import { EmailTemplate } from '@/components/EmailTemplate'
+import { subtractProductStock } from '@/lib/stockUtils'
 
 const resend = new Resend('re_KVGcomQe_38LTukHwU52AvNAMVzpdYt5a2')
 
@@ -48,6 +49,25 @@ export async function POST(req) {
 
         if (orderError) throw orderError
 
+        // Get order items
+        const { data: orderItems, error: itemsError } = await supabase
+          .from('order_items')
+          .select('*')
+          .eq('order_id', orderId)
+
+        if (itemsError) throw itemsError
+
+        // Subtract stock for each item
+        for (const item of orderItems) {
+          const { error: stockError, insufficientStock } = await subtractProductStock(item.product_id, item.quantity)
+          if (stockError) throw stockError
+          if (insufficientStock) {
+            console.error('Insufficient stock for product:', item.product_id)
+            // We could handle this by marking the order as failed, but since payment is already confirmed,
+            // we'll continue with the order and let customer service handle any stock issues
+          }
+        }
+
         // Update the order status to completed
         const { error: updateError } = await supabase
           .from('orders')
@@ -72,12 +92,12 @@ export async function POST(req) {
         if (paymentError) throw paymentError
 
         // Get order items for email
-        const { data: orderItems, error: itemsError } = await supabase
+        const { data: emailOrderItems, error: emailItemsError } = await supabase
           .from('order_items')
           .select('*')
           .eq('order_id', orderId)
 
-        if (itemsError) throw itemsError
+        if (emailItemsError) throw emailItemsError
 
         // Format data for email
         const customerData = {
@@ -91,7 +111,7 @@ export async function POST(req) {
             orderId: `#${orderId.slice(0, 8)}`,
             amount: amount_total / 100,
             shippingMethod: order.shipping_method,
-            items: orderItems.map(item => ({
+            items: emailOrderItems.map(item => ({
               name: item.name,
               quantity: item.quantity,
               price: item.price,
@@ -111,7 +131,7 @@ export async function POST(req) {
             orderId: `#${orderId.slice(0, 8)}`,
             amount: amount_total / 100,
             shippingMethod: order.shipping_method,
-            items: orderItems.map(item => ({
+            items: emailOrderItems.map(item => ({
               name: item.name,
               quantity: item.quantity,
               price: item.price,

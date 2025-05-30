@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 import { stripe } from "../../../lib/stripe"
 import { supabase } from "../../../lib/supabaseClient"
+import { validateOrderStock } from '@/lib/stockUtils'
 
 export async function POST(req) {
   try {
@@ -40,6 +41,32 @@ export async function POST(req) {
     if (!cart || !shippingInfo || !total || !orderId) {
       return NextResponse.json(
         { error: 'Missing required fields' },
+        { status: 400 }
+      )
+    }
+
+    // Validate stock before proceeding
+    const orderItems = cart.map(item => ({
+      product_id: item.id,
+      quantity: item.quantity
+    }))
+
+    const { error: stockValidationError, insufficientStock, items: insufficientItems } = await validateOrderStock(orderItems)
+    
+    if (stockValidationError) {
+      return NextResponse.json(
+        { error: 'Error validating stock' },
+        { status: 500 }
+      )
+    }
+
+    if (insufficientStock) {
+      const itemMessages = insufficientItems.map(item => {
+        const cartItem = cart.find(i => i.id === item.product_id)
+        return `${cartItem.name}: Only ${item.available} units available`
+      }).join(', ')
+      return NextResponse.json(
+        { error: `Some items are out of stock: ${itemMessages}` },
         { status: 400 }
       )
     }

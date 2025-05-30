@@ -13,6 +13,7 @@ import { toast } from "react-hot-toast";
 import { useForm } from "react-hook-form";
 import { useCountry } from "@/contexts/CountryContext";
 import { useTranslation } from "@/contexts/TranslationContext";
+import { validateOrderStock, subtractProductStock } from '@/lib/stockUtils';
 
 // Country list for international shipping
 const countries = [
@@ -547,6 +548,26 @@ export default function CheckoutPage() {
         throw new Error("User not authenticated")
       }
 
+      // Validate stock before creating order
+      const orderItems = cart.map(item => ({
+        product_id: item.id,
+        quantity: item.quantity
+      }))
+
+      const { error: stockValidationError, insufficientStock, items: insufficientItems } = await validateOrderStock(orderItems)
+      
+      if (stockValidationError) {
+        throw new Error('Error validating stock')
+      }
+
+      if (insufficientStock) {
+        const itemMessages = insufficientItems.map(item => {
+          const cartItem = cart.find(i => i.id === item.product_id)
+          return `${cartItem.name}: Only ${item.available} units available`
+        }).join(', ')
+        throw new Error(`Some items are out of stock: ${itemMessages}`)
+      }
+
       // Helper function to get shipping method name only
       const getShippingMethodName = (countryCode, methodId) => {
         const methods = shippingMethods[countryCode] || shippingMethods.CA;
@@ -565,7 +586,6 @@ export default function CheckoutPage() {
           amount: total,
           shipping_method: shippingMethodName,
           status: "pending", // COD orders start as pending
-          
           created_at: new Date().toISOString(),
           shipping_info: shippingInfo
         }])
@@ -580,8 +600,8 @@ export default function CheckoutPage() {
       // Store the order data
       setOrder(order)
 
-      // Create order items
-      const orderItems = cart.map(item => ({
+      // Create order items and update stock
+      const orderItemsData = cart.map(item => ({
         order_id: order.id,
         product_id: item.id,
         quantity: item.quantity,
@@ -592,9 +612,18 @@ export default function CheckoutPage() {
 
       const { error: orderItemsError } = await supabase
         .from("order_items")
-        .insert(orderItems)
+        .insert(orderItemsData)
 
       if (orderItemsError) throw orderItemsError;
+
+      // Update stock for each item (COD orders update stock immediately)
+      for (const item of cart) {
+        const { error: stockError, insufficientStock } = await subtractProductStock(item.id, item.quantity)
+        if (stockError) throw stockError
+        if (insufficientStock) {
+          throw new Error(`Insufficient stock for product: ${item.name}`)
+        }
+      }
 
       // Create payment record for COD
       const { error: paymentError } = await supabase
