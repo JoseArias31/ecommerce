@@ -57,27 +57,34 @@ export default function AddToCartButton({ product }) {
   return (
     <div className="w-full max-w-xs">
       <div className="flex items-center space-x-2">
-        <button
-          className="w-7 h-7 flex items-center justify-center border rounded bg-gray-100 hover:bg-gray-200 text-base font-bold transition p-0"
-          onClick={() => setQuantity(product.id, Math.max(1, quantity - 1))}
-          aria-label="Decrease quantity"
-        >
-          -
-        </button>
-        <input
-          type="number"
-          min={1}
-          value={quantity}
-          onChange={(e) => setQuantity(product.id, Math.max(1, Number(e.target.value)))}
-          className="w-9 text-center border rounded px-1 py-0.5 focus:outline-none focus:ring-2 focus:ring-indigo-300 text-sm"
-        />
-        <button
-          className="w-7 h-7 flex items-center justify-center border rounded bg-gray-100 hover:bg-gray-200 text-base font-bold transition p-0"
-          onClick={() => setQuantity(product.id, quantity + 1)}
-          aria-label="Increase quantity"
-        >
-          +
-        </button>
+        <div className="flex items-center rounded-lg overflow-hidden border border-gray-200 shadow-sm">
+          <button
+            className="w-8 h-8 flex items-center justify-center bg-white hover:bg-gray-50 text-gray-700 transition-colors duration-150 border-r border-gray-200"
+            onClick={() => setQuantity(product.id, Math.max(1, quantity - 1))}
+            aria-label="Decrease quantity"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+          </button>
+          <input
+            type="number"
+            min={1}
+            value={quantity}
+            onChange={(e) => setQuantity(product.id, Math.max(1, Number(e.target.value)))}
+            className="w-10 text-center bg-white px-0 py-1.5 focus:outline-none text-sm font-bold border-0"
+          />
+          <button
+            className="w-8 h-8 flex items-center justify-center bg-white hover:bg-gray-50 text-gray-700 transition-colors duration-150 border-l border-gray-200"
+            onClick={() => setQuantity(product.id, quantity + 1)}
+            aria-label="Increase quantity"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+          </button>
+        </div>
         <button
           className="ml-2 px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded flex items-center gap-1.5 font-semibold text-xs transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:ring-offset-2 active:scale-95 whitespace-nowrap shadow-sm"
           onClick={handleAddToCart}

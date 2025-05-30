@@ -1338,16 +1338,39 @@ export default function CheckoutPage() {
                       <span className="font-medium">
                         {isColombiaSelected ? 'Pagar con Tarjeta de Crédito' : 'Pay with Credit Card'}
                       </span>
+                      {country === 'CO' && (
+                        <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full font-medium ml-2">PayU</span>
+                      )}
+                      {country === 'CA' && (
+                        <span className="text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full font-medium ml-2">Stripe</span>
+                      )}
                     </span>
                   </label>
                   {activeTab === "credit" && !shippingMethod.includes('cod_') && (
-                    <button
-                      onClick={handlePaymentSubmit}
-                      disabled={isProcessing}
-                      className="mt-4 w-full bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors disabled:bg-gray-400"
-                    >
-                      {isProcessing ? "Processing..." : isColombiaSelected ? 'Pagar Ahora' : 'Pay Now'}
-                    </button>
+                    <>
+                      {country === 'CO' ? (
+                        <div className="mt-4">
+                          <button
+                            className="w-full bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-md transition-colors disabled:bg-gray-400"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              toast.success('PayU integration will be added soon!');
+                            }}
+                          >
+                            Pagar con PayU
+                          </button>
+                          <p className="text-xs text-gray-500 mt-2 text-center">El servicio de pago con PayU estará disponible pronto</p>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={handlePaymentSubmit}
+                          disabled={isProcessing}
+                          className="mt-4 w-full bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md transition-colors disabled:bg-gray-400"
+                        >
+                          {isProcessing ? "Processing..." : 'Pay with Stripe'}
+                        </button>
+                      )}
+                    </>
                   )}
                 </div>
 
