@@ -14,22 +14,51 @@ export default function AddToCartButton({ product }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [showAuthPrompt, setShowAuthPrompt] = useState(false)
   const { t } = useTranslation()
+  const [currentStock, setCurrentStock] = useState(product.stock || 0)
 
   useEffect(() => {
-    // Check authentication status
+    // Check authentication status and get current stock
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession()
       setIsAuthenticated(!!session)
+
+      // Get current stock level
+      const { data: productData, error } = await supabase
+        .from('products')
+        .select('stock')
+        .eq('id', product.id)
+        .single()
+
+      if (!error && productData) {
+        setCurrentStock(productData.stock)
+      }
     }
     checkAuth()
-  }, [])
+  }, [product.id])
+
+  // Update quantity if it exceeds current stock
+  useEffect(() => {
+    if (quantity > currentStock) {
+      setQuantity(product.id, currentStock)
+    }
+  }, [currentStock, product.id, quantity, setQuantity])
 
   const handleAddToCart = () => {
     const existingCart = JSON.parse(localStorage.getItem('cart')) || []
     const existingProductIndex = existingCart.findIndex(item => item.id === product.id)
 
+    // Calculate total quantity including what's already in cart
+    const existingQuantity = existingProductIndex !== -1 ? existingCart[existingProductIndex].quantity : 0
+    const newTotalQuantity = existingQuantity + quantity
+
+    // Check if total quantity would exceed stock
+    if (newTotalQuantity > currentStock) {
+      alert(`Sorry, only ${currentStock} units available${existingQuantity ? ` (${existingQuantity} already in cart)` : ''}`)
+      return
+    }
+
     if (existingProductIndex !== -1) {
-      existingCart[existingProductIndex].quantity += quantity
+      existingCart[existingProductIndex].quantity = newTotalQuantity
     } else {
       const productImage = product.images?.[0]?.url || product.image || '/placeholder.svg'
       
@@ -61,6 +90,7 @@ export default function AddToCartButton({ product }) {
           <button
             className="w-8 h-8 flex items-center justify-center bg-white hover:bg-gray-50 text-gray-700 transition-colors duration-150 border-r border-gray-200"
             onClick={() => setQuantity(product.id, Math.max(1, quantity - 1))}
+            disabled={quantity <= 1}
             aria-label="Decrease quantity"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -70,13 +100,21 @@ export default function AddToCartButton({ product }) {
           <input
             type="number"
             min={1}
+            max={currentStock}
             value={quantity}
-            onChange={(e) => setQuantity(product.id, Math.max(1, Number(e.target.value)))}
+            onChange={(e) => {
+              const newQuantity = Math.min(currentStock, Math.max(1, Number(e.target.value)))
+              setQuantity(product.id, newQuantity)
+            }}
             className="w-10 text-center bg-white px-0 py-1.5 focus:outline-none text-sm font-bold border-0"
           />
           <button
             className="w-8 h-8 flex items-center justify-center bg-white hover:bg-gray-50 text-gray-700 transition-colors duration-150 border-l border-gray-200"
-            onClick={() => setQuantity(product.id, quantity + 1)}
+            onClick={() => {
+              const newQuantity = Math.min(currentStock, quantity + 1)
+              setQuantity(product.id, newQuantity)
+            }}
+            disabled={quantity >= currentStock}
             aria-label="Increase quantity"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -86,13 +124,19 @@ export default function AddToCartButton({ product }) {
           </button>
         </div>
         <button
-          className="ml-2 px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded flex items-center gap-1.5 font-semibold text-xs transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:ring-offset-2 active:scale-95 whitespace-nowrap shadow-sm"
+          className="ml-2 px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded flex items-center gap-1.5 font-semibold text-xs transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:ring-offset-2 active:scale-95 whitespace-nowrap shadow-sm disabled:bg-gray-400 disabled:cursor-not-allowed"
           onClick={handleAddToCart}
+          disabled={currentStock === 0}
         >
           <ShoppingCart className="h-4 w-4" />
-          {t('addToCart')}
+          {currentStock === 0 ? 'Out of Stock' : t('addToCart')}
         </button>
       </div>
+      {currentStock > 0 && currentStock <= 5 && (
+        <p className="text-xs text-red-600 mt-1">
+          Only {currentStock} unit{currentStock === 1 ? '' : 's'} left!
+        </p>
+      )}
       {showCheckout && (
         <Link 
           href="/checkout" 

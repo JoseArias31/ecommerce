@@ -53,6 +53,38 @@ const shippingMethods = {
 
 // Add this component at the top of the file, before the main Checkout component
 function CartDisplay({ cart, updateQuantity, setQuantity, removeItem }) {
+  const [stockLevels, setStockLevels] = useState({})
+
+  // Fetch current stock levels
+  useEffect(() => {
+    const fetchStockLevels = async () => {
+      const productIds = cart.map(item => item.id)
+      if (productIds.length === 0) return
+
+      const { data: products, error } = await supabase
+        .from('products')
+        .select('id, stock')
+        .in('id', productIds)
+
+      if (!error && products) {
+        const levels = {}
+        products.forEach(product => {
+          levels[product.id] = product.stock
+        })
+        setStockLevels(levels)
+
+        // Update quantities if they exceed current stock
+        cart.forEach(item => {
+          if (item.quantity > levels[item.id]) {
+            updateQuantity(item.id, levels[item.id])
+            setQuantity(item.id, levels[item.id])
+          }
+        })
+      }
+    }
+    fetchStockLevels()
+  }, [cart])
+
   return (
     <div className="mt-6 space-y-4">
       <h3 className="font-medium text-sm">Your Cart ({cart.length})</h3>
@@ -71,24 +103,27 @@ function CartDisplay({ cart, updateQuantity, setQuantity, removeItem }) {
               <h4 className="text-sm font-medium">{item.name}</h4>
               <div className="flex items-center mt-1">
                 <button
-                  className="w-6 h-6 flex items-center justify-center border rounded-md text-sm bg-white hover:bg-gray-200"
+                  className="w-6 h-6 flex items-center justify-center border rounded-md text-sm bg-white hover:bg-gray-200 disabled:bg-gray-100 disabled:cursor-not-allowed"
                   onClick={() => {
                     const newQty = Math.max(1, item.quantity - 1);
                     updateQuantity(item.id, newQty);
                     setQuantity(item.id, newQty);
                   }}
+                  disabled={item.quantity <= 1}
                   aria-label="Decrease quantity"
                 >
                   -
                 </button>
                 <span className="mx-2 text-sm">{item.quantity}</span>
                 <button
-                  className="w-6 h-6 flex items-center justify-center border rounded-md text-sm bg-white hover:bg-gray-200"
+                  className="w-6 h-6 flex items-center justify-center border rounded-md text-sm bg-white hover:bg-gray-200 disabled:bg-gray-100 disabled:cursor-not-allowed"
                   onClick={() => {
-                    const newQty = item.quantity + 1;
+                    const maxQty = stockLevels[item.id] || 0
+                    const newQty = Math.min(maxQty, item.quantity + 1);
                     updateQuantity(item.id, newQty);
                     setQuantity(item.id, newQty);
                   }}
+                  disabled={item.quantity >= (stockLevels[item.id] || 0)}
                   aria-label="Increase quantity"
                 >
                   +
@@ -104,6 +139,11 @@ function CartDisplay({ cart, updateQuantity, setQuantity, removeItem }) {
                   <Trash2 className="h-5 w-5" />
                 </button>
               </div>
+              {stockLevels[item.id] <= 5 && (
+                <p className="text-xs text-red-600 mt-1">
+                  Only {stockLevels[item.id]} unit{stockLevels[item.id] === 1 ? '' : 's'} left!
+                </p>
+              )}
             </div>
             <div className="ml-2 text-sm">${(item.price * item.quantity).toFixed(2)}</div>
           </div>
