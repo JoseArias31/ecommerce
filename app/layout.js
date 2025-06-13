@@ -145,7 +145,7 @@ function LayoutContent({ cartCount, user, isMobileMenuOpen, setIsMobileMenuOpen,
                     <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white">
                       {t('store')}
                     </h1>
-                    <p className="text-xs sm:text-sm text-blue-200/90 text-center -mt-1">Shop Quick, Ship Quicker</p>
+                    <p className="text-xs sm:text-sm text-blue-200/90 text-center -mt-1">{t('tagline')}</p>
                   </div>
                   <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 group-hover:opacity-60 transition-all duration-300 group-hover:rotate-12">
                     <Image 
@@ -524,8 +524,8 @@ function LayoutContent({ cartCount, user, isMobileMenuOpen, setIsMobileMenuOpen,
           </header>
           <FloatingWhatsApp
             phoneNumber="16474252986"
-            accountName="The Quick Shop"
-            statusMessage="Typically replies within 2 minutes"
+            accountName={t('store')}
+            statusMessage={t('whatsappStatus')}
             avatar='/logowithbackground.png'
           />
           <div className="flex flex-col min-h-screen">

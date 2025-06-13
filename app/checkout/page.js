@@ -735,13 +735,17 @@ export default function CheckoutPage() {
       // Send email notifications
       // Use the existing email templates for both customer and admin
       const customerEmail = shippingInfo.email;
+      const formattedAmount = country === 'CO' 
+        ? total.toLocaleString('es-CO')
+        : total.toFixed(2);
+        
       const customerEmailData = {
         type: 'customer',
         firstName: shippingInfo.firstName,
         shippingInfo,
         orderDetails: {
           orderId: `#${order.order_number}`,
-          amount: total,
+          amount: formattedAmount,
           shippingMethod,
           paymentMethod: "Cash on Delivery",
           items: cart.map(item => ({
@@ -759,7 +763,7 @@ export default function CheckoutPage() {
         shippingInfo,
         orderDetails: {
           orderId: `#${order.order_number}`,
-          amount: total,
+          amount: formattedAmount,
           shippingMethod,
           paymentMethod: "Cash on Delivery",
           items: cart.map(item => ({
@@ -846,18 +850,16 @@ export default function CheckoutPage() {
           <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-6">
             <Check className="h-8 w-8 text-green-600" />
           </div>
-          <h2 className="text-2xl font-bold mb-4">{isCOD ? "Order Pending (COD)" : "Order Confirmed!"}</h2>
+          <h2 className="text-2xl font-bold mb-4">{t('orderConfirmed')}</h2>
           <p className="mb-6 text-gray-600">
-            {isCOD
-              ? "Your order is pending. Please pay the delivery person in cash or e-transfer. Our staff will confirm your payment soon."
-              : `Thank you for your purchase. We've sent a confirmation email to ${shippingInfo.email}.`}
+            {t('orderConfirmationMessage', { email: shippingInfo.email })}
           </p>
           <p className="mb-8 text-gray-600">
-            Order #: {order?.order_number || 'Processing...'}
+            {t('orderNumber')}: {order?.order_number || t('processingOrder')}
           </p>
           <Link href="/">
             <button className="bg-black text-white px-6 py-2 rounded-md hover:bg-gray-800 transition-colors">
-              Continue Shopping
+              {t('continueShopping')}
             </button>
           </Link>
         </div>
@@ -884,48 +886,17 @@ export default function CheckoutPage() {
             </div>
 
             {/* Shipping Information */}
-            <h2 className="text-xl font-semibold mb-4">
-              {isColombiaSelected ? 'Información de Envío' : 'Shipping Information'}
-            </h2>
+            <h2 className="text-xl font-semibold mb-4">{t('shippingInfo')}</h2>
 
             {/* Address Selection Section */}
             <div className="mb-6">
               {isAuthenticated && savedAddresses.length > 0 && !showNewAddressForm ? (
                 <>
-                  <h3 className="font-medium mb-3">{isColombiaSelected ? 'Direcciones Guardadas' : 'Saved Addresses'}</h3>
+                  <h3 className="font-medium mb-3">{t('savedAddresses')}</h3>
                   <div className="grid gap-2">
                     {/* Create a filtered list first to ensure uniqueness when displaying */}
                     {savedAddresses
-                      .filter(address => {
-                        // Filter addresses by country
-                        if (country === 'CA') {
-                          // For Canada, show both Canada and US addresses
-                          return address.country === 'CA' || address.country === 'US';
-                        } else if (country === 'CO') {
-                          // For Colombia, show only Colombia addresses
-                          return address.country === 'CO';
-                        }
-                        // Default case - show all addresses
-                        return true;
-                      })
-                      // Remove any remaining duplicates that might appear due to cross-country filtering
-                      .reduce((uniqueAddresses, address) => {
-                        // Check if this address (ignoring the country) is already in our list
-                        const isDuplicate = uniqueAddresses.some(a => 
-                          a.first_name === address.first_name &&
-                          a.last_name === address.last_name &&
-                          a.address === address.address &&
-                          a.apartment === address.apartment &&
-                          a.city === address.city &&
-                          a.state === address.state &&
-                          a.zip_code === address.zip_code
-                        );
-                        
-                        if (!isDuplicate) {
-                          uniqueAddresses.push(address);
-                        }
-                        return uniqueAddresses;
-                      }, [])
+                      .filter(address => address.country === country)
                       .map((address) => (
                       <div
                         key={address.id}
@@ -980,7 +951,7 @@ export default function CheckoutPage() {
                     onClick={() => setShowNewAddressForm(true)}
                     className="mt-4 text-blue-600 hover:text-blue-800"
                   >
-                    {isColombiaSelected ? '+ Añadir Nueva Dirección' : '+ Add New Address'}
+                    {t('addNewAddress')}
                   </button>
                 </>
               ) : (
@@ -1135,9 +1106,9 @@ export default function CheckoutPage() {
               )}
             </div>
 
-            {/* Billing Address Section - Always visible */}
+            {/* Billing Address Section */}
             <div className="border-t pt-6">
-              <h3 className="font-medium mb-4">{isColombiaSelected ? 'Dirección de Facturación' : 'Billing Address'}</h3>
+              <h3 className="font-medium mb-4">{t('billingAddress')}</h3>
               <div className="space-y-3">
                 <div className="flex items-center space-x-2">
                   <input
@@ -1150,7 +1121,7 @@ export default function CheckoutPage() {
                     className="h-4 w-4 text-black focus:ring-gray-500 border-gray-300"
                   />
                   <label htmlFor="same" className="font-normal cursor-pointer">
-                    {isColombiaSelected ? 'Misma que la dirección de envío' : 'Same as shipping address'}
+                    {t('sameAsShipping')}
                   </label>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -1164,7 +1135,7 @@ export default function CheckoutPage() {
                     className="h-4 w-4 text-black focus:ring-gray-500 border-gray-300"
                   />
                   <label htmlFor="different" className="font-normal cursor-pointer">
-                    {isColombiaSelected ? 'Usar una dirección de facturación diferente' : 'Use a different billing address'}
+                    {t('differentBilling')}
                   </label>
                 </div>
 
@@ -1329,7 +1300,7 @@ export default function CheckoutPage() {
                 className="bg-black text-white px-6 py-2 rounded-md hover:bg-gray-800 transition-colors"
                 disabled={isProcessing}
               >
-                {isProcessing ? 'Processing...' : isColombiaSelected ? 'Continuar al Pago' : 'Continue to Payment'}
+                {isProcessing ? t('processingOrder') : t('continueToPay')}
               </button>
             </div>
           </div>
@@ -1340,9 +1311,7 @@ export default function CheckoutPage() {
           <div className="space-y-6">
             {/* Shipping Method Selection */}
             <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-xl font-semibold mb-4">
-                {isColombiaSelected ? 'Método de Envío' : 'Shipping Method'}
-              </h2>
+              <h2 className="text-xl font-semibold mb-4">{t('shippingMethod')}</h2>
               <div className="space-y-3">
                 {(shippingMethods[country] || shippingMethods.CA).map((method) => (
                   <div key={method.id} 
@@ -1379,9 +1348,7 @@ export default function CheckoutPage() {
 
             {/* Payment Method Selection */}
             <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-xl font-semibold mb-4">
-                {isColombiaSelected ? 'Método de Pago' : 'Payment Method'}
-              </h2>
+              <h2 className="text-xl font-semibold mb-4">{t('paymentMethod')}</h2>
               <div className="space-y-4">
                 {/* Credit Card Option */}
                 <div className={`p-4 border rounded-lg ${
@@ -1404,9 +1371,7 @@ export default function CheckoutPage() {
                     />
                     <span className="flex items-center space-x-2">
                       <CreditCard className="h-5 w-5 text-gray-400" />
-                      <span className="font-medium">
-                        {isColombiaSelected ? 'Pagar con Tarjeta de Crédito' : 'Pay with Credit Card'}
-                      </span>
+                      <span className="font-medium">{t('payWithCard')}</span>
                       {country === 'CO' && (
                         <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full font-medium ml-2">PayU</span>
                       )}
@@ -1426,9 +1391,9 @@ export default function CheckoutPage() {
                               toast.success('PayU integration will be added soon!');
                             }}
                           >
-                            Pagar con PayU
+                            {t('payWithCard')}
                           </button>
-                          <p className="text-xs text-gray-500 mt-2 text-center">El servicio de pago con PayU estará disponible pronto</p>
+                          <p className="text-xs text-gray-500 mt-2 text-center">{t('payUComingSoon')}</p>
                         </div>
                       ) : (
                         <button
@@ -1436,13 +1401,13 @@ export default function CheckoutPage() {
                           disabled={isProcessing}
                           className="mt-4 w-full bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md transition-colors disabled:bg-gray-400"
                         >
-                          {isProcessing ? "Processing..." : 'Pay with Stripe'}
+                          {isProcessing ? t('processingOrder') : t('payWithCard')}
                         </button>
                       )}
                     </>
                   )}
                 </div>
-
+                
                 {/* COD Option */}
                 <div className={`p-4 border rounded-lg ${
                   activeTab === "cod" ? "border-blue-500" : "border-gray-200"
@@ -1465,7 +1430,7 @@ export default function CheckoutPage() {
                     <span className="flex items-center space-x-2">
                       <Package className="h-5 w-5 text-gray-400" />
                       <span className="font-medium">
-                        {isColombiaSelected ? 'Pago Contra Entrega' : 'Cash on Delivery (COD)'}
+                        {isColombiaSelected ? 'Pago Contra Entrega' : 'Cash on Delivery'}
                       </span>
                     </span>
                   </label>
@@ -1507,9 +1472,9 @@ export default function CheckoutPage() {
               <div className="w-16 h-16 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-4">
                 <ShoppingBag className="h-8 w-8 text-indigo-600" />
               </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Welcome to Checkout</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">{t('checkoutWelcome')}</h2>
               <p className="text-gray-600">
-                Sign in to get a better shopping experience
+                {t('signInBetterExp')}
               </p>
             </div>
 
@@ -1524,7 +1489,7 @@ export default function CheckoutPage() {
                   <path d="M10 17L15 12L10 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   <path d="M15 12H3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
-                Sign In to Your Account
+                {t('signInToAccount')}
               </Link>
               <button
                 onClick={() => setShowAuthPrompt(false)}
@@ -1535,7 +1500,7 @@ export default function CheckoutPage() {
                   <path d="M12 16V12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   <path d="M12 8H12.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
-                Continue as Guest
+                {t('continueAsGuest')}
               </button>
             </div>
 
@@ -1546,7 +1511,7 @@ export default function CheckoutPage() {
                   <path d="M12 16V12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   <path d="M12 8H12.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
-                <span>Your cart items will be saved</span>
+                <span>{t('cartSaved')}</span>
               </div>
             </div>
           </div>
@@ -1555,17 +1520,17 @@ export default function CheckoutPage() {
         <>
           <Link href="/" className="inline-flex items-center text-sm mb-8 hover:underline">
             <ArrowLeft className="h-4 w-4 mr-1" />
-            Continue shopping
+            {t('continueShopping')}
           </Link>
 
-          <h1 className="text-3xl font-bold mb-8">Checkout</h1>
+          <h1 className="text-3xl font-bold mb-8">{t('checkout')}</h1>
 
           {cart.length === 0 && !isComplete ? (
             <div className="text-center py-12">
-              <p className="text-xl mb-4">Your cart is empty</p>
+              <p className="text-xl mb-4">{t('cartEmpty')}</p>
               <Link href="/">
                 <button className="bg-black text-white px-6 py-2 rounded-md hover:bg-gray-800 transition-colors">
-                  Browse Products
+                  {t('browseProducts')}
                 </button>
               </Link>
             </div>
@@ -1613,70 +1578,74 @@ export default function CheckoutPage() {
               <div className="lg:col-span-1">
                 {!isComplete && (
                   <div className="bg-gray-50 p-6 rounded-lg sticky top-6">
-                    <h2 className="text-xl font-bold mb-4">Order Summary</h2>                      <div className="space-y-2 mb-4">
-                        <div className="flex justify-between">
-                          <span>Subtotal</span>
-                          <span>
-                            {country === 'CO' 
-                              ? `$${subtotal.toLocaleString('es-CO')}`
-                              : `$${subtotal.toFixed(2)}`}
-                          </span>
-                        </div>
-                        
-                        {!isCOD && selectedShippingMethod && (
-                          <div className="flex justify-between">
-                            <span>
-                              {isColombiaSelected ? 'Envío' : 'Shipping'} ({selectedShippingMethod.estimatedDays})
-                            </span>
-                            <span>
-                              {country === 'CO'
-                                ? `$${selectedShippingMethod.price.toLocaleString('es-CO')}`
-                                : `$${selectedShippingMethod.price.toFixed(2)}`}
-                            </span>
-                          </div>
-                        )}
-                        
-                        {isCOD && selectedShippingMethod && (
-                          <div className="flex justify-between">
-                            <span>
-                              {isColombiaSelected ? 'Tarifa Contra Entrega' : 'Cash on Delivery Fee'} ({selectedShippingMethod.estimatedDays})
-                            </span>
-                            <span>
-                              {country === 'CO'
-                                ? `$${selectedShippingMethod.price.toLocaleString('es-CO')}`
-                                : `$${selectedShippingMethod.price.toFixed(2)}`}
-                            </span>
-                          </div>
-                        )}
-                        
-                        <div className="flex justify-between">
-                          <span>{isColombiaSelected ? 'Impuestos' : 'Taxes'}</span>
-                          <span>
-                            {country === 'CO'
-                              ? `$${taxes.toLocaleString('es-CO')}`
-                              : `$${taxes.toFixed(2)}`}
-                          </span>
-                        </div>
-                        
-                        <div className="border-t pt-2 mt-2 flex justify-between font-bold">
-                          <span>Total</span>
-                          <span>
-                            {country === 'CO'
-                              ? `$${total.toLocaleString('es-CO')}`
-                              : `$${total.toFixed(2)}`}
-                          </span>
-                        </div>
+                  <h2 className="text-xl font-bold mb-4">{t('orderSummary')}</h2>
+                  <div className="space-y-2 mb-4">
+                    <div className="flex justify-between">
+                      <span>{t('subtotal')}</span>
+                      <span>
+                        {country === 'CO' 
+                          ? `$${subtotal.toLocaleString('es-CO')}`
+                          : `$${subtotal.toFixed(2)}`}
+                      </span>
+                    </div>
+                    
+                    {!isCOD && selectedShippingMethod && (
+                      <div className="flex justify-between">
+                        <span>
+                          {t('shipping')} ({selectedShippingMethod.estimatedDays})
+                        </span>
+                        <span>
+                          {country === 'CO'
+                            ? `$${selectedShippingMethod.price.toLocaleString('es-CO')}`
+                            : `$${selectedShippingMethod.price.toFixed(2)}`}
+                        </span>
                       </div>
+                    )}
+                    
+                    {isCOD && selectedShippingMethod && (
+                      <div className="flex justify-between">
+                        <span>
+                          {t('codFee')} ({selectedShippingMethod.estimatedDays})
+                        </span>
+                        <span>
+                          {country === 'CO'
+                            ? `$${selectedShippingMethod.price.toLocaleString('es-CO')}`
+                            : `$${selectedShippingMethod.price.toFixed(2)}`}
+                        </span>
+                      </div>
+                    )}
+                    
+                    <div className="flex justify-between">
+                      <span>{t('taxes')}</span>
+                      <span>
+                        {country === 'CO'
+                          ? `$${taxes.toLocaleString('es-CO')}`
+                          : `$${taxes.toFixed(2)}`}
+                      </span>
+                    </div>
+                    
+                    <div className="border-t pt-2 mt-2 flex justify-between font-bold">
+                      <span>{t('total')}</span>
+                      <span>
+                        {country === 'CO'
+                          ? `$${total.toLocaleString('es-CO')}`
+                          : `$${total.toFixed(2)}`}
+                      </span>
+                    </div>
+                  </div>
 
                     {activeStep === "shipping" && (
-                      <CartDisplay 
-                        cart={cart}
-                        updateQuantity={updateQuantity}
-                        setQuantity={setQuantity}
-                        removeItem={removeItem}
-                      />
+                      <div className="mt-6 space-y-4">
+                        <h3 className="font-medium text-sm">{t('yourCart')} ({cart.length})</h3>
+                        <CartDisplay 
+                          cart={cart}
+                          updateQuantity={updateQuantity}
+                          setQuantity={setQuantity}
+                          removeItem={removeItem}
+                        />
+                      </div>
                     )}
-                  </div>
+                </div>
                 )}
               </div>
             </div>

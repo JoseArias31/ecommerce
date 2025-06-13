@@ -10,8 +10,10 @@ import { useQuantityStore } from "@/store/quantityStore"
 import { useCountry } from "@/contexts/CountryContext"
 import { useRouter } from "next/navigation"
 import { formatPriceForCountry } from "@/lib/countryUtils"
+import { useTranslation } from "@/contexts/TranslationContext"
 
 export default function ProductPage({ params }) {
+  const { t } = useTranslation();
   const { id } = params
   const [product, setProduct] = useState(null)
   const [relatedProducts, setRelatedProducts] = useState([])
@@ -548,22 +550,22 @@ export default function ProductPage({ params }) {
             <div className="flex">
               <Truck className="h-5 w-5 text-gray-600 mr-3 flex-shrink-0" />
               <div>
-                <h3 className="font-medium">Free Shipping</h3>
-                <p className="text-sm text-gray-600">Free standard shipping on orders over $100</p>
+                <h3 className="font-medium">{t('freeShipping')}</h3>
+                <p className="text-sm text-gray-600">{t('freeShippingMessage')}</p>
               </div>
             </div>
             <div className="flex">
               <RotateCcw className="h-5 w-5 text-gray-600 mr-3 flex-shrink-0" />
               <div>
-                <h3 className="font-medium">Easy Returns</h3>
-                <p className="text-sm text-gray-600">30-day return policy</p>
+                <h3 className="font-medium">{t('easyReturns')}</h3>
+                <p className="text-sm text-gray-600">{t('easyReturnsMessage')}</p>
               </div>
             </div>
             <div className="flex">
               <ShieldCheck className="h-5 w-5 text-gray-600 mr-3 flex-shrink-0" />
               <div>
-                <h3 className="font-medium">Secure Checkout</h3>
-                <p className="text-sm text-gray-600">SSL encrypted checkout</p>
+                <h3 className="font-medium">{t('secureCheckout')}</h3>
+                <p className="text-sm text-gray-600">{t('secureCheckoutMessage')}</p>
               </div>
             </div>
           </div>

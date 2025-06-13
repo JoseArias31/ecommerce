@@ -1,8 +1,18 @@
-import * as React from "react";
+import React from 'react';
 
 interface EmailTemplateProps {
   type: 'customer' | 'admin';
   firstName: string;
+  translations: {
+    yourItems: string;
+    totalAmount: string;
+    shippingInfo: string;
+    shippingMethod: string;
+    quantity: string;
+    orderShipNotification: string;
+    viewInDashboard: string;
+    allRightsReserved: string;
+  };
   shippingInfo: {
     firstName: string;
     lastName: string;
@@ -33,6 +43,7 @@ export const EmailTemplate: React.FC<Readonly<EmailTemplateProps>> = ({
   firstName,
   shippingInfo,
   orderDetails,
+  translations,
 }) => (
   <div style={{
     fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
@@ -108,7 +119,7 @@ export const EmailTemplate: React.FC<Readonly<EmailTemplateProps>> = ({
           margin: "0 0 5px 0",
           letterSpacing: "0.5px"
         }}>
-          TOTAL AMOUNT
+          {translations.totalAmount}
         </p>
         <p style={{
           fontSize: "18px",
@@ -121,120 +132,120 @@ export const EmailTemplate: React.FC<Readonly<EmailTemplateProps>> = ({
       </div>
     </div>
 
- {/* Items List - Professionally Styled */}
-<div style={{ padding: "0 20px", margin: "20px 0" }}>
-  <h3 style={{
-    fontSize: "14px",
-    fontWeight: 600,
-    color: "#6b7280",
-    margin: "0 0 15px 0",
-    letterSpacing: "0.5px",
-    textTransform: "uppercase"
-  }}>
-    YOUR ITEMS
-  </h3>
-  
-  {orderDetails.items.map((item, index) => (
-    <div key={index} style={{
-      display: "flex",
-      justifyContent: "space-between",
-      alignItems: "center",
-      padding: "12px 0",
-      borderBottom: index < orderDetails.items.length - 1 
-        ? "1px solid #f3f4f6" 
-        : "none",
-      gap: "15px"
-    }}>
-      {/* Product Info */}
-      <div style={{ flex: 1, display: "flex", gap: "16px", alignItems: "center" }}>
-        {/* <div style={{
-          width: "48px",
-          height: "48px",
-          borderRadius: "8px",
-          overflow: "hidden",
-          border: "1px solid #e5e7eb",
+    {/* Items List - Professionally Styled */}
+    <div style={{ padding: "0 20px", margin: "20px 0" }}>
+      <h3 style={{
+        fontSize: "14px",
+        fontWeight: 600,
+        color: "#6b7280",
+        margin: "0 0 15px 0",
+        letterSpacing: "0.5px",
+        textTransform: "uppercase"
+      }}>
+        {translations.yourItems}
+      </h3>
+      
+      {orderDetails.items.map((item, index) => (
+        <div key={index} style={{
           display: "flex",
+          justifyContent: "space-between",
           alignItems: "center",
-          justifyContent: "center"
+          padding: "12px 0",
+          borderBottom: index < orderDetails.items.length - 1 
+            ? "1px solid #f3f4f6" 
+            : "none",
+          gap: "15px"
         }}>
-          <img 
-            src={item.image} 
-            alt={item.name}
-            style={{
-              width: "100%",
-              height: "100%",
-              objectFit: "cover",
-              display: "block"
-            }}
-          />
-        </div> */}
-        <div>
-          <p style={{
-            margin: "0 0 4px 0",
-            fontSize: "15px",
-            fontWeight: 500,
-            color: "#111827",
-            lineHeight: 1.4
-          }}>
-            {item.name}
-          </p>
-          <div style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "8px"
-          }}>
-            <div style={{
-              width: "24px",
-              height: "24px",
-              backgroundColor: "#f3f4f6",
-              borderRadius: "4px",
+          {/* Product Info */}
+          <div style={{ flex: 1, display: "flex", gap: "16px", alignItems: "center" }}>
+            {/* <div style={{
+              width: "48px",
+              height: "48px",
+              borderRadius: "8px",
+              overflow: "hidden",
+              border: "1px solid #e5e7eb",
               display: "flex",
               alignItems: "center",
               justifyContent: "center"
             }}>
-              <span style={{
-                fontSize: "12px",
-                fontWeight: 600,
-                color: "#4b5563"
+              <img 
+                src={item.image} 
+                alt={item.name}
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                  display: "block"
+                }}
+              />
+            </div> */}
+            <div>
+              <p style={{
+                margin: "0 0 4px 0",
+                fontSize: "15px",
+                fontWeight: 500,
+                color: "#111827",
+                lineHeight: 1.4
               }}>
-                {item.quantity}
-              </span>
+                {item.name}
+              </p>
+              <div style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px"
+              }}>
+                <div style={{
+                  width: "24px",
+                  height: "24px",
+                  backgroundColor: "#f3f4f6",
+                  borderRadius: "4px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center"
+                }}>
+                  <span style={{
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    color: "#4b5563"
+                  }}>
+                    {item.quantity}
+                  </span>
+                </div>
+                <span style={{
+                  fontSize: "13px",
+                  color: "#6b7280"
+                }}>
+                  {translations.quantity}
+                </span>
+              </div>
             </div>
-            <span style={{
-              fontSize: "13px",
-              color: "#6b7280"
+          </div>
+
+          {/* Price Info */}
+          <div style={{
+            textAlign: "right",
+            minWidth: "80px"
+          }}>
+            <p style={{
+              margin: "0 0 4px 0",
+              fontSize: "15px",
+              fontWeight: 500,
+              color: "#111827"
             }}>
-              Quantity
-            </span>
+              ${item.price}
+            </p>
+            <p style={{
+              margin: "0",
+              fontSize: "13px",
+              color: "#6b7280",
+              fontWeight: 500
+            }}>
+              ${(item.price * item.quantity)}
+            </p>
           </div>
         </div>
-      </div>
-
-      {/* Price Info */}
-      <div style={{
-        textAlign: "right",
-        minWidth: "80px"
-      }}>
-        <p style={{
-          margin: "0 0 4px 0",
-          fontSize: "15px",
-          fontWeight: 500,
-          color: "#111827"
-        }}>
-          ${item.price}
-        </p>
-        <p style={{
-          margin: "0",
-          fontSize: "13px",
-          color: "#6b7280",
-          fontWeight: 500
-        }}>
-          ${(item.price * item.quantity)}
-        </p>
-      </div>
+      ))}
     </div>
-  ))}
-</div>
 
     {/* Shipping Information */}
     <div style={{
@@ -251,7 +262,7 @@ export const EmailTemplate: React.FC<Readonly<EmailTemplateProps>> = ({
         letterSpacing: "0.5px",
         textTransform: "uppercase"
       }}>
-        SHIPPING INFORMATION
+        {translations.shippingInfo}
       </h3>
       <div style={{ lineHeight: "1.6" }}>
         <p style={{ margin: "0 0 8px 0", fontSize: "15px", color: "#111827" }}>
@@ -291,7 +302,7 @@ export const EmailTemplate: React.FC<Readonly<EmailTemplateProps>> = ({
         letterSpacing: "0.5px",
         textTransform: "uppercase"
       }}>
-        SHIPPING METHOD
+        {translations.shippingMethod}
       </h3>
       <p style={{
         margin: "0",
@@ -310,7 +321,7 @@ export const EmailTemplate: React.FC<Readonly<EmailTemplateProps>> = ({
           margin: "12px 0 0 0",
           fontStyle: "italic"
         }}>
-          We'll notify you when your order ships
+          {translations.orderShipNotification}
         </p>
       )}
     </div>
@@ -344,7 +355,7 @@ export const EmailTemplate: React.FC<Readonly<EmailTemplateProps>> = ({
             color: "#9ca3af",
             margin: "16px 0 0 0"
           }}>
-            © {new Date().getFullYear()} The Quick Shop. All rights reserved.
+            © {new Date().getFullYear()} The Quick Shop. {translations.allRightsReserved}
           </p>
         </>
       ) : (
@@ -360,7 +371,7 @@ export const EmailTemplate: React.FC<Readonly<EmailTemplateProps>> = ({
               fontWeight: 500, 
               textDecoration: "none"
             }}>
-            View in dashboard →
+            {translations.viewInDashboard}
           </a>
         </p>
       )}

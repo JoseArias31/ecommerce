@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
 import { EmailTemplate } from "@/components/EmailTemplate";
+import { emailTranslations } from "@/lib/emailTranslations";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -27,10 +28,13 @@ export async function POST(request: Request) {
     try {
       customerResponse = await resend.emails.send({
         from: 'The Quick Shop <onboarding@resend.dev>', // 👈 Pre-verified domain
-  to: customerEmail,
+        to: customerEmail,
         subject: `Your Order Confirmation #${customerData.orderDetails.orderId.replace('#', '')}`,
-  react: EmailTemplate(customerData),
-  replyTo: 'gojosearias@gmail.com' // 👈 Replies go to your Gmail
+        react: EmailTemplate({
+          ...customerData,
+          translations: customerData.language === 'es' ? emailTranslations.es : emailTranslations.en
+        }),
+        replyTo: 'gojosearias@gmail.com' // 👈 Replies go to your Gmail
       });
       console.log('Customer email response:', customerResponse);
     } catch (customerError) {
@@ -43,7 +47,10 @@ export async function POST(request: Request) {
         from: 'The Quick Shop <onboarding@resend.dev>',
         to: adminEmail,
         subject: `New Order Received #${adminData.orderDetails.orderId.replace('#', '')}`,
-        react: EmailTemplate(adminData)
+        react: EmailTemplate({
+          ...adminData,
+          translations: adminData.language === 'es' ? emailTranslations.es : emailTranslations.en
+        })
       });
       console.log('Admin email response:', adminResponse);
     } catch (adminError) {
