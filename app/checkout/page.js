@@ -894,10 +894,18 @@ export default function CheckoutPage() {
                 <>
                   <h3 className="font-medium mb-3">{t('savedAddresses')}</h3>
                   <div className="grid gap-2">
-                    {/* Create a filtered list first to ensure uniqueness when displaying */}
-                    {savedAddresses
-                      .filter(address => address.country === country)
-                      .map((address) => (
+                    {/* Filter to only unique addresses by address fields before displaying */}
+                    {Array.from(
+                      new Map(
+                        savedAddresses
+                          .filter(address => address.country === country)
+                          .map(addr => [
+                            // Composite key: address, apartment, city, state, zip_code, country
+                            `${addr.address}|${addr.apartment}|${addr.city}|${addr.state}|${addr.zip_code}|${addr.country}`,
+                            addr
+                          ])
+                      ).values()
+                    ).map((address) => (
                       <div
                         key={address.id}
                         className={`border rounded-lg p-3 cursor-pointer transition-all hover:shadow-sm ${

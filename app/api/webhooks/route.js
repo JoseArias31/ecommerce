@@ -34,10 +34,17 @@ export async function POST(req) {
           email,
           name,
           address
-        },
+        } = {},
         amount_total,
         shipping
       } = session
+
+      console.log('Processing successful payment for order:', orderId)
+
+      if (!orderId) {
+        console.error('No order ID found in session')
+        return NextResponse.json({ error: 'No order ID found' }, { status: 400 })
+      }
 
       try {
         // Get the order details from the database
@@ -47,7 +54,10 @@ export async function POST(req) {
           .eq('id', orderId)
           .single()
 
-        if (orderError) throw orderError
+        if (orderError) {
+          console.error('Error fetching order:', orderError)
+          throw orderError
+        }
 
         // Get order items
         const { data: orderItems, error: itemsError } = await supabase
@@ -55,26 +65,57 @@ export async function POST(req) {
           .select('*')
           .eq('order_id', orderId)
 
-        if (itemsError) throw itemsError
+        if (itemsError) {
+          console.error('Error fetching order items:', itemsError)
+          throw itemsError
+        }
+
+        // Check if payment already exists to prevent duplicate processing
+        const { data: existingPayment } = await supabase
+          .from('payments')
+          .select('id')
+          .eq('transaction_id', sessionId)
+          .single()
+
+        if (existingPayment) {
+          console.log('Payment already processed for session:', sessionId)
+          return NextResponse.json({ received: true })
+        }
 
         // Subtract stock for each item
+        let stockErrors = []
         for (const item of orderItems) {
           const { error: stockError, insufficientStock } = await subtractProductStock(item.product_id, item.quantity)
-          if (stockError) throw stockError
-          if (insufficientStock) {
-            console.error('Insufficient stock for product:', item.product_id)
-            // We could handle this by marking the order as failed, but since payment is already confirmed,
-            // we'll continue with the order and let customer service handle any stock issues
+          
+          if (stockError) {
+            console.error(`Error subtracting stock for product ${item.product_id}:`, stockError)
+            stockErrors.push(`Product ${item.product_id}: ${stockError.message}`)
+          } else if (insufficientStock) {
+            console.warn(`Insufficient stock for product ${item.product_id} - this shouldn't happen after validation`)
+            stockErrors.push(`Product ${item.product_id}: Insufficient stock`)
+          } else {
+            console.log(`Successfully subtracted ${item.quantity} units from product ${item.product_id}`)
           }
+        }
+
+        // Log stock errors but continue processing since payment is confirmed
+        if (stockErrors.length > 0) {
+          console.error('Stock update errors (payment still processed):', stockErrors)
         }
 
         // Update the order status to completed
         const { error: updateError } = await supabase
           .from('orders')
-          .update({ status: 'completed' })
+          .update({ 
+            status: 'completed',
+            updated_at: new Date().toISOString()
+          })
           .eq('id', orderId)
 
-        if (updateError) throw updateError
+        if (updateError) {
+          console.error('Error updating order status:', updateError)
+          throw updateError
+        }
 
         // Create payment record
         const { error: paymentError } = await supabase
@@ -89,15 +130,21 @@ export async function POST(req) {
             created_at: new Date().toISOString()
           }])
 
-        if (paymentError) throw paymentError
+        if (paymentError) {
+          console.error('Error creating payment record:', paymentError)
+          throw paymentError
+        }
 
-        // Get order items for email
+        // Get order items for email (with product details)
         const { data: emailOrderItems, error: emailItemsError } = await supabase
           .from('order_items')
           .select('*')
           .eq('order_id', orderId)
 
-        if (emailItemsError) throw emailItemsError
+        if (emailItemsError) {
+          console.error('Error fetching order items for email:', emailItemsError)
+          throw emailItemsError
+        }
 
         // Format data for email
         const customerData = {
@@ -167,18 +214,51 @@ export async function POST(req) {
           });
           console.log('Admin email response:', adminResponse);
 
-          console.log('Emails sent successfully');
+          console.log('Emails sent successfully for order:', orderId);
         } catch (emailError) {
           console.error('Error sending email:', emailError);
+          // Don't throw here - email failure shouldn't fail the entire webhook
         }
 
+        console.log('Successfully processed payment and updated stock for order:', orderId)
         return NextResponse.json({ received: true })
+
       } catch (error) {
         console.error('Error processing webhook:', error)
         return NextResponse.json(
           { error: 'Error processing webhook' },
           { status: 500 }
         )
+      }
+    }
+
+    // Handle payment failures
+    if (event.type === 'checkout.session.expired' || event.type === 'payment_intent.payment_failed') {
+      const session = event.data.object
+      const orderId = session.client_reference_id || session.metadata?.order_id
+
+      if (orderId) {
+        console.log('Processing failed/expired payment for order:', orderId)
+
+        // Update order status to cancelled
+        await supabase
+          .from('orders')
+          .update({ 
+            status: 'cancelled',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', orderId)
+
+        // Update payment status if exists
+        await supabase
+          .from('payments')
+          .update({ 
+            status: 'failed',
+            updated_at: new Date().toISOString()
+          })
+          .eq('order_id', orderId)
+
+        console.log('Updated failed payment for order:', orderId)
       }
     }
 
